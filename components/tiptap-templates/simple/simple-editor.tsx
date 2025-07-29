@@ -75,6 +75,9 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
 import content from "@/components/tiptap-templates/simple/data/content.json"
+import AITooltip from "@/components/ai-tooltip";
+import Sidebar from "@/components/sidebar";
+import {Issue, lint} from "@/lib/hemingway";
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -190,7 +193,8 @@ export function SimpleEditor() {
   const [mobileView, setMobileView] = React.useState<
     "main" | "highlighter" | "link"
   >("main")
-  const toolbarRef = React.useRef<HTMLDivElement>(null)
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const [issues, setIssues] = React.useState<Issue[]>([]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -231,6 +235,10 @@ export function SimpleEditor() {
       }),
     ],
     content,
+    // NEW: live linting
+    onUpdate({ editor }) {
+        setIssues(lint(editor.state.doc.textContent));
+    },
   })
 
   const isScrolling = useScrolling()
@@ -244,6 +252,18 @@ export function SimpleEditor() {
       setMobileView("main")
     }
   }, [isMobile, mobileView])
+
+  /* ---------- WORD & SENTENCE STATS ---------- */
+  const stats = React.useMemo(() => {
+    if (!editor) return { words: 0, sentences: 0 };
+    const text = editor.state.doc.textContent;
+    return {
+      words: text.split(/\s+/).filter(Boolean).length,
+      sentences: text.split(/[.!?]+/).filter(Boolean).length,
+    };
+  }, [editor?.state.doc.textContent]);
+
+  /* ---------- MAIN RENDER ---------- */
 
   return (
     <div className="simple-editor-wrapper">
@@ -275,11 +295,35 @@ export function SimpleEditor() {
           )}
         </Toolbar>
 
-        <EditorContent
-          editor={editor}
-          role="presentation"
-          className="simple-editor-content"
-        />
+        {editor && (<AITooltip editor={editor} />)}
+
+        <div className="flex justify-center w-full relative">
+          {/* Main Editor (Centered) */}
+            <EditorContent
+              editor={editor}
+              role="presentation"
+              className="simple-editor-content"
+            />
+
+          {/* Right Sidebar (Fixed to viewport right) */}
+          {editor && (
+            <aside className="fixed top-12 right-0 h-screen w-[248px] text-white px-4 py-6 overflow-y-auto border-gray-700 shadow-lg hidden lg:block">
+              <h2 className="text-lg font-semibold mb-2">Readability</h2>
+              <p className="text-green-400 font-medium">Grade 8</p>
+              <p className="text-sm text-gray-300 mb-4">Good.</p>
+
+              <div className="space-y-3 text-sm">
+                <div className="bg-red-600 px-3 py-2 rounded">2 of 25 sentences are very hard to read.</div>
+                <div className="bg-yellow-600 px-3 py-2 rounded">2 of 25 sentences are hard to read.</div>
+                <div className="bg-green-600 px-3 py-2 rounded">Grammar and spelling (upgrade)</div>
+                <div className="bg-blue-600 px-3 py-2 rounded">4 weakeners.</div>
+                <div className="bg-purple-600 px-3 py-2 rounded">2 simpler alternatives.</div>
+              </div>
+            </aside>
+          )}
+        </div>
+
+
       </EditorContext.Provider>
     </div>
   )

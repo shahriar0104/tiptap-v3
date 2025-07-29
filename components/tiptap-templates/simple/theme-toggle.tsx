@@ -34,6 +34,7 @@ export function ThemeToggle() {
 
   return (
     <Button
+      className="cursor-pointer"
       onClick={toggleDarkMode}
       aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
       data-style="ghost"
