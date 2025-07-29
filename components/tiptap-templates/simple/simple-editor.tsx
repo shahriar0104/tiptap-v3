@@ -25,6 +25,7 @@ import {
 
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
+import { ChartNode } from "@/components/tiptap-node/chart-node/chart-node-extension"
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
@@ -77,16 +78,19 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 import content from "@/components/tiptap-templates/simple/data/content.json"
 import AITooltip from "@/components/ai-tooltip";
 import Sidebar from "@/components/sidebar";
+import { ChartFAB } from "@/components/tiptap-ui/chart-fab/chart-fab";
 import {Issue, lint} from "@/lib/hemingway";
 
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
   isMobile,
+  editor,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
+  editor: any
 }) => {
   return (
     <>
@@ -145,6 +149,7 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
+        <ChartFAB editor={editor} toolbar />
       </ToolbarGroup>
 
       <Spacer />
@@ -195,6 +200,7 @@ export function SimpleEditor() {
   >("main")
   const toolbarRef = React.useRef<HTMLDivElement>(null);
   const [issues, setIssues] = React.useState<Issue[]>([]);
+  const [selectedText, setSelectedText] = React.useState<string>("");
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -233,11 +239,14 @@ export function SimpleEditor() {
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
+      ChartNode,
     ],
     content,
     // NEW: live linting
     onUpdate({ editor }) {
-        setIssues(lint(editor.state.doc.textContent));
+      setIssues(lint(editor.state.doc.textContent));
+      const { from, to } = editor.state.selection;
+      setSelectedText(editor.state.doc.textBetween(from, to));
     },
   })
 
@@ -286,6 +295,7 @@ export function SimpleEditor() {
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               isMobile={isMobile}
+              editor={editor}
             />
           ) : (
             <MobileToolbarContent
@@ -296,6 +306,7 @@ export function SimpleEditor() {
         </Toolbar>
 
         {editor && (<AITooltip editor={editor} />)}
+        {/* ChartFAB now in toolbar, not floating */}
 
         <div className="flex justify-center w-full relative">
           {/* Main Editor (Centered) */}
@@ -308,17 +319,7 @@ export function SimpleEditor() {
           {/* Right Sidebar (Fixed to viewport right) */}
           {editor && (
             <aside className="fixed top-12 right-0 h-screen w-[248px] text-white px-4 py-6 overflow-y-auto border-gray-700 shadow-lg hidden lg:block">
-              <h2 className="text-lg font-semibold mb-2">Readability</h2>
-              <p className="text-green-400 font-medium">Grade 8</p>
-              <p className="text-sm text-gray-300 mb-4">Good.</p>
-
-              <div className="space-y-3 text-sm">
-                <div className="bg-red-600 px-3 py-2 rounded">2 of 25 sentences are very hard to read.</div>
-                <div className="bg-yellow-600 px-3 py-2 rounded">2 of 25 sentences are hard to read.</div>
-                <div className="bg-green-600 px-3 py-2 rounded">Grammar and spelling (upgrade)</div>
-                <div className="bg-blue-600 px-3 py-2 rounded">4 weakeners.</div>
-                <div className="bg-purple-600 px-3 py-2 rounded">2 simpler alternatives.</div>
-              </div>
+              <Sidebar issues={issues} editor={editor} />
             </aside>
           )}
         </div>

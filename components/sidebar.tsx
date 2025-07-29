@@ -3,15 +3,24 @@
 import { Editor } from "@tiptap/react";
 import { Issue } from "@/lib/hemingway";
 
+// Optionally, add a callback to replace text in the editor
+interface Props {
+    issues: Issue[];
+    editor: Editor;
+    onSuggestionClick?: (issue: Issue) => void;
+}
+
 interface Props {
     issues: Issue[];
     editor: Editor;
 }
 
-export default function Sidebar({ issues, editor }: Props) {
+
+export default function Sidebar({ issues, editor, onSuggestionClick }: Props) {
     const jump = (issue: Issue) => {
         editor.commands.setTextSelection({ from: issue.from, to: issue.to });
         editor.commands.scrollIntoView();
+        if (onSuggestionClick) onSuggestionClick(issue);
     };
 
     return (
