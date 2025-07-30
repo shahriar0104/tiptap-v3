@@ -1,32 +1,28 @@
 "use client"
 
 import * as React from "react"
-import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import {EditorContent, EditorContext, useEditor} from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
-import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
-import { TaskItem, TaskList } from "@tiptap/extension-list"
-import { TextAlign } from "@tiptap/extension-text-align"
-import { Typography } from "@tiptap/extension-typography"
-import { Highlight } from "@tiptap/extension-highlight"
-import { Subscript } from "@tiptap/extension-subscript"
-import { Superscript } from "@tiptap/extension-superscript"
-import { Selection } from "@tiptap/extensions"
+import {StarterKit} from "@tiptap/starter-kit"
+import {Image} from "@tiptap/extension-image"
+import {TaskItem, TaskList} from "@tiptap/extension-list"
+import {TextAlign} from "@tiptap/extension-text-align"
+import {Typography} from "@tiptap/extension-typography"
+import {Highlight} from "@tiptap/extension-highlight"
+import {Subscript} from "@tiptap/extension-subscript"
+import {Superscript} from "@tiptap/extension-superscript"
+import {Selection} from "@tiptap/extensions"
 
 // --- UI Primitives ---
-import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Spacer } from "@/components/tiptap-ui-primitive/spacer"
-import {
-  Toolbar,
-  ToolbarGroup,
-  ToolbarSeparator,
-} from "@/components/tiptap-ui-primitive/toolbar"
+import {Button} from "@/components/tiptap-ui-primitive/button"
+import {Spacer} from "@/components/tiptap-ui-primitive/spacer"
+import {Toolbar, ToolbarGroup, ToolbarSeparator,} from "@/components/tiptap-ui-primitive/toolbar"
 
 // --- Tiptap Node ---
-import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
-import { ChartNode } from "@/components/tiptap-node/chart-node/chart-node-extension"
-import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
+import {ImageUploadNode} from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
+import {ChartUploadNode} from "@/components/tiptap-node/chart-upload-node/chart-upload-node-extension"
+import {HorizontalRule} from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss"
@@ -34,43 +30,40 @@ import "@/components/tiptap-node/list-node/list-node.scss"
 import "@/components/tiptap-node/image-node/image-node.scss"
 import "@/components/tiptap-node/heading-node/heading-node.scss"
 import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
+import "@/components/tiptap-node/chart-upload-node/chart-upload-node.scss"
 
 // --- Tiptap UI ---
-import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
-import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
-import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
-import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
-import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
+import {HeadingDropdownMenu} from "@/components/tiptap-ui/heading-dropdown-menu"
+import {ImageUploadButton} from "@/components/tiptap-ui/image-upload-button"
+import {ListDropdownMenu} from "@/components/tiptap-ui/list-dropdown-menu"
+import {BlockquoteButton} from "@/components/tiptap-ui/blockquote-button"
+import {CodeBlockButton} from "@/components/tiptap-ui/code-block-button"
 import {
   ColorHighlightPopover,
-  ColorHighlightPopoverContent,
   ColorHighlightPopoverButton,
+  ColorHighlightPopoverContent,
 } from "@/components/tiptap-ui/color-highlight-popover"
-import {
-  LinkPopover,
-  LinkContent,
-  LinkButton,
-} from "@/components/tiptap-ui/link-popover"
-import { MarkButton } from "@/components/tiptap-ui/mark-button"
-import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
-import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
+import {LinkButton, LinkContent, LinkPopover,} from "@/components/tiptap-ui/link-popover"
+import {MarkButton} from "@/components/tiptap-ui/mark-button"
+import {TextAlignButton} from "@/components/tiptap-ui/text-align-button"
+import {UndoRedoButton} from "@/components/tiptap-ui/undo-redo-button"
 
 // --- Icons ---
-import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
-import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
-import { LinkIcon } from "@/components/tiptap-icons/link-icon"
+import {ArrowLeftIcon} from "@/components/tiptap-icons/arrow-left-icon"
+import {HighlighterIcon} from "@/components/tiptap-icons/highlighter-icon"
+import {LinkIcon} from "@/components/tiptap-icons/link-icon"
 
 // --- Hooks ---
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useWindowSize } from "@/hooks/use-window-size"
-import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
-import { useScrolling } from "@/hooks/use-scrolling"
+import {useIsMobile} from "@/hooks/use-mobile"
+import {useWindowSize} from "@/hooks/use-window-size"
+import {useCursorVisibility} from "@/hooks/use-cursor-visibility"
+import {useScrolling} from "@/hooks/use-scrolling"
 
 // --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
+import {ThemeToggle} from "@/components/tiptap-templates/simple/theme-toggle"
 
 // --- Lib ---
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import {handleChartUpload, handleImageUpload, MAX_FILE_SIZE} from "@/lib/tiptap-utils"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -79,18 +72,16 @@ import content from "@/components/tiptap-templates/simple/data/content.json"
 import AITooltip from "@/components/ai-tooltip";
 import Sidebar from "@/components/sidebar";
 import {Issue, lint} from "@/lib/hemingway";
-import ChartFAB from "@/components/tiptap-ui/chart-fab/chart-fab";
+import {ChartUploadButton} from "@/components/tiptap-ui/chart-upload-button/chart-upload-button";
 
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
   isMobile,
-  editor,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
-  editor: any
 }) => {
   return (
     <>
@@ -149,7 +140,7 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
-        <ChartFAB editor={editor} />
+        <ChartUploadButton text="Chart"/>
       </ToolbarGroup>
 
       <Spacer />
@@ -200,7 +191,6 @@ export function SimpleEditor() {
   >("main")
   const toolbarRef = React.useRef<HTMLDivElement>(null);
   const [issues, setIssues] = React.useState<Issue[]>([]);
-  const [selectedText, setSelectedText] = React.useState<string>("");
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -239,14 +229,17 @@ export function SimpleEditor() {
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
-      ChartNode,
+      ChartUploadNode.configure({
+        accept: ".csv,.xlsx,.xls",
+        maxSize: 10 * 1024 * 1024, // 10MB
+        limit: 1,
+        upload: handleChartUpload,
+        onError: (error) => console.error("Chart upload failed:", error),
+      }),
     ],
     content,
-    // NEW: live linting
     onUpdate({ editor }) {
       setIssues(lint(editor.state.doc.textContent));
-      const { from, to } = editor.state.selection;
-      setSelectedText(editor.state.doc.textBetween(from, to));
     },
   })
 
@@ -261,18 +254,6 @@ export function SimpleEditor() {
       setMobileView("main")
     }
   }, [isMobile, mobileView])
-
-  /* ---------- WORD & SENTENCE STATS ---------- */
-  const stats = React.useMemo(() => {
-    if (!editor) return { words: 0, sentences: 0 };
-    const text = editor.state.doc.textContent;
-    return {
-      words: text.split(/\s+/).filter(Boolean).length,
-      sentences: text.split(/[.!?]+/).filter(Boolean).length,
-    };
-  }, [editor?.state.doc.textContent]);
-
-  /* ---------- MAIN RENDER ---------- */
 
   return (
     <div className="simple-editor-wrapper">
@@ -295,7 +276,6 @@ export function SimpleEditor() {
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               isMobile={isMobile}
-              editor={editor}
             />
           ) : (
             <MobileToolbarContent
@@ -306,7 +286,6 @@ export function SimpleEditor() {
         </Toolbar>
 
         {editor && (<AITooltip editor={editor} />)}
-        {/* ChartFAB now in toolbar, not floating */}
 
         <div className="flex justify-center w-full relative">
           {/* Main Editor (Centered) */}
@@ -323,7 +302,6 @@ export function SimpleEditor() {
             </aside>
           )}
         </div>
-
 
       </EditorContext.Provider>
     </div>

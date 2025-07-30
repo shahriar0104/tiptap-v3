@@ -1,6 +1,7 @@
-import type { Node as TiptapNode } from "@tiptap/pm/model"
-import { NodeSelection } from "@tiptap/pm/state"
-import type { Editor } from "@tiptap/react"
+import type {Node as TiptapNode} from "@tiptap/pm/model"
+import {NodeSelection} from "@tiptap/pm/state"
+import type {Editor} from "@tiptap/react"
+import * as XLSX from "xlsx"
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -273,6 +274,97 @@ export const handleImageUpload = async (
   }
 
   return "/images/tiptap-ui-placeholder-image.jpg"
+}
+
+// Chart upload function
+export const handleChartUpload = async (
+  file: File,
+  onProgress?: (event: { progress: number }) => void,
+  abortSignal?: AbortSignal
+): Promise<any> => {
+  // Validate file
+  if (!file) {
+    throw new Error("No file provided")
+  }
+
+  const allowedTypes = ['.csv', '.xlsx', '.xls']
+  const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+
+  if (!allowedTypes.includes(fileExtension)) {
+    throw new Error("Invalid file type. Please upload CSV or Excel files.")
+  }
+
+  // Simulate processing progress
+  for (let progress = 0; progress <= 100; progress += 20) {
+    if (abortSignal?.aborted) {
+      throw new Error("Processing cancelled")
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    onProgress?.({ progress })
+  }
+
+  // Process the file
+  const buf = await file.arrayBuffer()
+  const wb = XLSX.read(buf, { type: 'array' })
+  const json = XLSX.utils.sheet_to_json<any>(wb.Sheets[wb.SheetNames[0]])
+
+  if (!json.length) throw new Error('Empty sheet')
+
+  const [xKey, ...yKeys] = Object.keys(json[0])
+  const series = yKeys.map((k) => ({
+    name: k,
+    data: json.map((row) => Number(String(row[k]).replace(/,/g, ''))),
+  }))
+
+  return {
+    type: 'bar',
+    series: series,
+    options: {
+      chart: {
+        type: 'bar',
+        height: 400,
+        toolbar: {
+          show: true,
+        },
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '55%',
+          endingShape: 'rounded',
+        },
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: {
+        show: true,
+        width: 2,
+        colors: ['transparent'],
+      },
+      xaxis: {
+        categories: json.map((row) => String(row[xKey])),
+        title: {
+          text: xKey,
+        },
+      },
+      yaxis: {
+        title: {
+          text: 'Values',
+        },
+      },
+      fill: {
+        opacity: 1,
+      },
+      tooltip: {
+        y: {
+          formatter: function (val: any) {
+            return val + " units"
+          },
+        },
+      },
+    },
+  }
 }
 
 type ProtocolOptions = {
