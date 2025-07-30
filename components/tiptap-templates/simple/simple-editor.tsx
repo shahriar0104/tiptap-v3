@@ -78,8 +78,8 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 import content from "@/components/tiptap-templates/simple/data/content.json"
 import AITooltip from "@/components/ai-tooltip";
 import Sidebar from "@/components/sidebar";
-import { ChartFAB } from "@/components/tiptap-ui/chart-fab/chart-fab";
 import {Issue, lint} from "@/lib/hemingway";
+import ChartFAB from "@/components/tiptap-ui/chart-fab/chart-fab";
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -149,7 +149,7 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
-        <ChartFAB editor={editor} toolbar />
+        <ChartFAB editor={editor} />
       </ToolbarGroup>
 
       <Spacer />
