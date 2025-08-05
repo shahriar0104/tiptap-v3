@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  boardPapers BoardPaper[]
+
+  @@map("users")
+}
+
+model BoardPaper {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      BoardPaperStatus @default(DRAFT)
+  meetingDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  authorId String
+  author   User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  agendaItems AgendaItem[]
+
+  @@map("board_papers")
+}
+
+model AgendaItem {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  order         Int
+  duration      Int? // in minutes
+  status        AgendaItemStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  boardPaperId String
+  boardPaper   BoardPaper @relation(fields: [boardPaperId], references: [id], onDelete: Cascade)
+
+  @@map("agenda_items")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  MODERATOR
+}
+
+enum BoardPaperStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  APPROVED
+  REJECTED
+}
+
+enum AgendaItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+} 
