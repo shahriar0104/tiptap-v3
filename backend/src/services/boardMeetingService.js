@@ -1,7 +1,7 @@
 import database from '../config/database.js';
 import { Prisma } from '@prisma/client';
 
-class BoardPaperService {
+class BoardMeetingService {
   constructor() {
     // Don't get the client during initialization
     this._prisma = null;
@@ -16,38 +16,38 @@ class BoardPaperService {
   }
 
   /**
-   * Create a new board paper with agenda items using a transaction
-   * @param {Object} boardPaperData - Board paper data
+   * Create a new board meeting with agenda items using a transaction
+   * @param {Object} boardMeetingData - Board meeting data
    * @param {Array} agendaItems - Array of agenda items
    * @param {string} authorId - ID of the author
-   * @returns {Object} Created board paper with agenda items
+   * @returns {Object} Created board meeting with agenda items
    */
-  async createBoardPaperWithAgendaItems(boardPaperData, agendaItems, authorId) {
+  async createBoardMeetingWithAgendaItems(boardMeetingData, agendaItems, authorId) {
     try {
       const result = await database.transaction(async (tx) => {
-        // Create the board paper
-        const boardPaper = await tx.boardPaper.create({
+        // Create the board meeting
+        const boardMeeting = await tx.boardMeeting.create({
           data: {
-            ...boardPaperData,
+            ...boardMeetingData,
             authorId,
-            meetingDate: boardPaperData.meetingDate ? new Date(boardPaperData.meetingDate) : null,
+            meetingDate: boardMeetingData.meetingDate ? new Date(boardMeetingData.meetingDate) : null,
           },
         });
 
         // Create agenda items with proper ordering
-        const agendaItemsWithBoardPaperId = agendaItems.map((item, index) => ({
+        const agendaItemsWithBoardMeetingId = agendaItems.map((item, index) => ({
           ...item,
-          boardPaperId: boardPaper.id,
+          boardMeetingId: boardMeeting.id,
           order: item.order || index + 1,
         }));
 
         const createdAgendaItems = await tx.agendaItem.createMany({
-          data: agendaItemsWithBoardPaperId,
+          data: agendaItemsWithBoardMeetingId,
         });
 
-        // Fetch the created board paper with agenda items
-        const boardPaperWithAgendaItems = await tx.boardPaper.findUnique({
-          where: { id: boardPaper.id },
+        // Fetch the created board meeting with agenda items
+        const boardMeetingWithAgendaItems = await tx.boardMeeting.findUnique({
+          where: { id: boardMeeting.id },
           include: {
             author: {
               select: {
@@ -62,38 +62,38 @@ class BoardPaperService {
           },
         });
 
-        return boardPaperWithAgendaItems;
+        return boardMeetingWithAgendaItems;
       });
 
       return {
         success: true,
         data: result,
-        message: 'Board paper created successfully with agenda items',
+        message: 'Board meeting created successfully with agenda items',
       };
     } catch (error) {
-      console.error('Error creating board paper with agenda items:', error);
+      console.error('Error creating board meeting with agenda items:', error);
       
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new Error('A board paper with this title already exists');
+          throw new Error('A board meeting with this title already exists');
         }
         if (error.code === 'P2003') {
           throw new Error('Invalid author ID provided');
         }
       }
       
-      throw new Error('Failed to create board paper with agenda items');
+      throw new Error('Failed to create board meeting with agenda items');
     }
   }
 
   /**
-   * Get a board paper by ID with its agenda items
-   * @param {string} id - Board paper ID
-   * @returns {Object} Board paper with agenda items
+   * Get a board meeting by ID with its agenda items
+   * @param {string} id - Board meeting ID
+   * @returns {Object} Board meeting with agenda items
    */
-  async getBoardPaperById(id) {
+  async getBoardMeetingById(id) {
     try {
-      const boardPaper = await this.prisma.boardPaper.findUnique({
+      const boardMeeting = await this.prisma.boardMeeting.findUnique({
         where: { id },
         include: {
           author: {
@@ -109,32 +109,32 @@ class BoardPaperService {
         },
       });
 
-      if (!boardPaper) {
-        throw new Error('Board paper not found');
+      if (!boardMeeting) {
+        throw new Error('Board meeting not found');
       }
 
       return {
         success: true,
-        data: boardPaper,
-        message: 'Board paper retrieved successfully',
+        data: boardMeeting,
+        message: 'Board meeting retrieved successfully',
       };
     } catch (error) {
-      console.error('Error fetching board paper:', error);
+      console.error('Error fetching board meeting:', error);
       
-      if (error.message === 'Board paper not found') {
+      if (error.message === 'Board meeting not found') {
         throw error;
       }
       
-      throw new Error('Failed to fetch board paper');
+      throw new Error('Failed to fetch board meeting');
     }
   }
 
   /**
-   * Get all board papers with optional filtering
+   * Get all board meetings with optional filtering
    * @param {Object} filters - Optional filters
-   * @returns {Array} Array of board papers
+   * @returns {Array} Array of board meetings
    */
-  async getAllBoardPapers(filters = {}) {
+  async getAllBoardMeetings(filters = {}) {
     try {
       const { status, authorId, limit = 50, offset = 0 } = filters;
 
@@ -142,7 +142,7 @@ class BoardPaperService {
       if (status) where.status = status;
       if (authorId) where.authorId = authorId;
 
-      const boardPapers = await this.prisma.boardPaper.findMany({
+      const boardMeetings = await this.prisma.boardMeeting.findMany({
         where,
         include: {
           author: {
@@ -169,24 +169,24 @@ class BoardPaperService {
 
       return {
         success: true,
-        data: boardPapers,
-        message: 'Board papers retrieved successfully',
+        data: boardMeetings,
+        message: 'Board meetings retrieved successfully',
       };
     } catch (error) {
-      console.error('Error fetching board papers:', error);
-      throw new Error('Failed to fetch board papers');
+      console.error('Error fetching board meetings:', error);
+      throw new Error('Failed to fetch board meetings');
     }
   }
 
   /**
-   * Update a board paper
-   * @param {string} id - Board paper ID
+   * Update a board meeting
+   * @param {string} id - Board meeting ID
    * @param {Object} updateData - Data to update
-   * @returns {Object} Updated board paper
+   * @returns {Object} Updated board meeting
    */
-  async updateBoardPaper(id, updateData) {
+  async updateBoardMeeting(id, updateData) {
     try {
-      const boardPaper = await this.prisma.boardPaper.update({
+      const boardMeeting = await this.prisma.boardMeeting.update({
         where: { id },
         data: {
           ...updateData,
@@ -208,62 +208,62 @@ class BoardPaperService {
 
       return {
         success: true,
-        data: boardPaper,
-        message: 'Board paper updated successfully',
+        data: boardMeeting,
+        message: 'Board meeting updated successfully',
       };
     } catch (error) {
-      console.error('Error updating board paper:', error);
+      console.error('Error updating board meeting:', error);
       
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          throw new Error('Board paper not found');
+          throw new Error('Board meeting not found');
         }
       }
       
-      throw new Error('Failed to update board paper');
+      throw new Error('Failed to update board meeting');
     }
   }
 
   /**
-   * Delete a board paper and its agenda items
-   * @param {string} id - Board paper ID
+   * Delete a board meeting and its agenda items
+   * @param {string} id - Board meeting ID
    * @returns {Object} Deletion result
    */
-  async deleteBoardPaper(id) {
+  async deleteBoardMeeting(id) {
     try {
-      await this.prisma.boardPaper.delete({
+      await this.prisma.boardMeeting.delete({
         where: { id },
       });
 
       return {
         success: true,
-        message: 'Board paper deleted successfully',
+        message: 'Board meeting deleted successfully',
       };
     } catch (error) {
-      console.error('Error deleting board paper:', error);
+      console.error('Error deleting board meeting:', error);
       
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          throw new Error('Board paper not found');
+          throw new Error('Board meeting not found');
         }
       }
       
-      throw new Error('Failed to delete board paper');
+      throw new Error('Failed to delete board meeting');
     }
   }
 
   /**
-   * Add agenda items to an existing board paper
-   * @param {string} boardPaperId - Board paper ID
+   * Add agenda items to an existing board meeting
+   * @param {string} boardMeetingId - Board meeting ID
    * @param {Array} agendaItems - Array of agenda items to add
-   * @returns {Object} Updated board paper with new agenda items
+   * @returns {Object} Updated board meeting with new agenda items
    */
-  async addAgendaItems(boardPaperId, agendaItems) {
+  async addAgendaItems(boardMeetingId, agendaItems) {
     try {
       const result = await database.transaction(async (tx) => {
         // Get current max order
         const maxOrder = await tx.agendaItem.aggregate({
-          where: { boardPaperId },
+          where: { boardMeetingId },
           _max: { order: true },
         });
 
@@ -272,7 +272,7 @@ class BoardPaperService {
         // Create new agenda items
         const agendaItemsWithOrder = agendaItems.map((item, index) => ({
           ...item,
-          boardPaperId,
+          boardMeetingId,
           order: item.order || startOrder + index,
         }));
 
@@ -280,9 +280,9 @@ class BoardPaperService {
           data: agendaItemsWithOrder,
         });
 
-        // Fetch updated board paper
-        const boardPaper = await tx.boardPaper.findUnique({
-          where: { id: boardPaperId },
+        // Fetch updated board meeting
+        const boardMeeting = await tx.boardMeeting.findUnique({
+          where: { id: boardMeetingId },
           include: {
             author: {
               select: {
@@ -297,7 +297,7 @@ class BoardPaperService {
           },
         });
 
-        return boardPaper;
+        return boardMeeting;
       });
 
       return {
@@ -312,4 +312,4 @@ class BoardPaperService {
   }
 }
 
-export default new BoardPaperService(); 
+export default new BoardMeetingService(); 

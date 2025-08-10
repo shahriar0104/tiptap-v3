@@ -22,7 +22,7 @@ export const agendaItemSchema = z.object({
     .optional(),
 });
 
-export const boardPaperSchema = z.object({
+export const boardMeetingSchema = z.object({
   title: z.string()
     .min(1, 'Title is required')
     .max(config.validation.maxTitleLength, `Title must be less than ${config.validation.maxTitleLength} characters`),
@@ -43,8 +43,8 @@ export const boardPaperSchema = z.object({
     .optional(), // Optional for now, will be set from auth middleware
 });
 
-// Validation for creating board paper with agenda items
-export const createBoardPaperSchema = z.object({
+// Validation for creating board meeting with agenda items
+export const createBoardMeetingSchema = z.object({
   title: z.string()
     .min(1, 'Title is required')
     .max(config.validation.maxTitleLength, `Title must be less than ${config.validation.maxTitleLength} characters`),
@@ -62,8 +62,8 @@ export const createBoardPaperSchema = z.object({
     .max(config.validation.maxAgendaItems, `Cannot have more than ${config.validation.maxAgendaItems} agenda items`),
 });
 
-// Validation for updating board paper
-export const updateBoardPaperSchema = z.object({
+// Validation for updating board meeting
+export const updateBoardMeetingSchema = z.object({
   title: z.string()
     .min(1, 'Title is required')
     .max(config.validation.maxTitleLength, `Title must be less than ${config.validation.maxTitleLength} characters`)
@@ -137,7 +137,7 @@ export const createValidationMiddleware = (schema) => {
 };
 
 // Export validation middleware for common use cases
-export const validateCreateBoardPaper = createValidationMiddleware(createBoardPaperSchema);
-export const validateUpdateBoardPaper = createValidationMiddleware(updateBoardPaperSchema);
+export const validateCreateBoardMeeting = createValidationMiddleware(createBoardMeetingSchema);
+export const validateUpdateBoardMeeting = createValidationMiddleware(updateBoardMeetingSchema);
 export const validateUpdateAgendaItem = createValidationMiddleware(updateAgendaItemSchema);
 export const validateId = createValidationMiddleware(idSchema); 

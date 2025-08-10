@@ -1,8 +1,8 @@
 import express from 'express';
-import boardPaperController from '../controllers/boardPaperController.js';
+import boardMeetingController from '../controllers/boardMeetingController.js';
 import {
-  validateCreateBoardPaper,
-  validateUpdateBoardPaper,
+  validateCreateBoardMeeting,
+  validateUpdateBoardMeeting,
   validateId,
 } from '../utils/validation.js';
 
@@ -12,7 +12,7 @@ const router = express.Router();
  * @swagger
  * components:
  *   schemas:
- *     BoardPaper:
+ *     BoardMeeting:
  *       type: object
  *       required:
  *         - title
@@ -20,10 +20,10 @@ const router = express.Router();
  *       properties:
  *         title:
  *           type: string
- *           description: Title of the board paper
+ *           description: Title of the board meeting
  *         description:
  *           type: string
- *           description: Description of the board paper
+ *           description: Description of the board meeting
  *         status:
  *           type: string
  *           enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
@@ -65,19 +65,19 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/board-papers:
+ * /api/board-meetings:
  *   post:
- *     summary: Create a new board paper with agenda items
- *     tags: [Board Papers]
+ *     summary: Create a new board meeting with agenda items
+ *     tags: [Board Meetings]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BoardPaper'
+ *             $ref: '#/components/schemas/BoardMeeting'
  *     responses:
  *       201:
- *         description: Board paper created successfully
+ *         description: Board meeting created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -88,22 +88,22 @@ const router = express.Router();
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/BoardPaper'
+ *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
  *       409:
- *         description: Board paper already exists
+ *         description: Board meeting already exists
  *       500:
  *         description: Internal server error
  */
-router.post('/', validateCreateBoardPaper, boardPaperController.createBoardPaper);
+router.post('/', validateCreateBoardMeeting, boardMeetingController.createBoardMeeting);
 
 /**
  * @swagger
- * /api/board-papers:
+ * /api/board-meetings:
  *   get:
- *     summary: Get all board papers with optional filtering
- *     tags: [Board Papers]
+ *     summary: Get all board meetings with optional filtering
+ *     tags: [Board Meetings]
  *     parameters:
  *       - in: query
  *         name: status
@@ -130,7 +130,7 @@ router.post('/', validateCreateBoardPaper, boardPaperController.createBoardPaper
  *         description: Number of items to skip
  *     responses:
  *       200:
- *         description: Board papers retrieved successfully
+ *         description: Board meetings retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -143,7 +143,7 @@ router.post('/', validateCreateBoardPaper, boardPaperController.createBoardPaper
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/BoardPaper'
+ *                     $ref: '#/components/schemas/BoardMeeting'
  *                 pagination:
  *                   type: object
  *                   properties:
@@ -156,24 +156,24 @@ router.post('/', validateCreateBoardPaper, boardPaperController.createBoardPaper
  *       500:
  *         description: Internal server error
  */
-router.get('/', boardPaperController.getAllBoardPapers);
+router.get('/', boardMeetingController.getAllBoardMeetings);
 
 /**
  * @swagger
- * /api/board-papers/{id}:
+ * /api/board-meetings/{id}:
  *   get:
- *     summary: Get a board paper by ID
- *     tags: [Board Papers]
+ *     summary: Get a board meeting by ID
+ *     tags: [Board Meetings]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Board paper ID
+ *         description: Board meeting ID
  *     responses:
  *       200:
- *         description: Board paper retrieved successfully
+ *         description: Board meeting retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -184,27 +184,27 @@ router.get('/', boardPaperController.getAllBoardPapers);
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/BoardPaper'
+ *                   $ref: '#/components/schemas/BoardMeeting'
  *       404:
- *         description: Board paper not found
+ *         description: Board meeting not found
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', boardPaperController.getBoardPaper);
+router.get('/:id', boardMeetingController.getBoardMeeting);
 
 /**
  * @swagger
- * /api/board-papers/{id}:
+ * /api/board-meetings/{id}:
  *   put:
- *     summary: Update a board paper
- *     tags: [Board Papers]
+ *     summary: Update a board meeting
+ *     tags: [Board Meetings]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Board paper ID
+ *         description: Board meeting ID
  *     requestBody:
  *       required: true
  *       content:
@@ -224,7 +224,7 @@ router.get('/:id', boardPaperController.getBoardPaper);
  *                 format: date-time
  *     responses:
  *       200:
- *         description: Board paper updated successfully
+ *         description: Board meeting updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -235,32 +235,32 @@ router.get('/:id', boardPaperController.getBoardPaper);
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/BoardPaper'
+ *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
  *       404:
- *         description: Board paper not found
+ *         description: Board meeting not found
  *       500:
  *         description: Internal server error
  */
-router.put('/:id', validateUpdateBoardPaper, boardPaperController.updateBoardPaper);
+router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoardMeeting);
 
 /**
  * @swagger
- * /api/board-papers/{id}:
+ * /api/board-meetings/{id}:
  *   delete:
- *     summary: Delete a board paper
- *     tags: [Board Papers]
+ *     summary: Delete a board meeting
+ *     tags: [Board Meetings]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Board paper ID
+ *         description: Board meeting ID
  *     responses:
  *       200:
- *         description: Board paper deleted successfully
+ *         description: Board meeting deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -271,25 +271,25 @@ router.put('/:id', validateUpdateBoardPaper, boardPaperController.updateBoardPap
  *                 message:
  *                   type: string
  *       404:
- *         description: Board paper not found
+ *         description: Board meeting not found
  *       500:
  *         description: Internal server error
  */
-router.delete('/:id', boardPaperController.deleteBoardPaper);
+router.delete('/:id', boardMeetingController.deleteBoardMeeting);
 
 /**
  * @swagger
- * /api/board-papers/{id}/agenda-items:
+ * /api/board-meetings/{id}/agenda-items:
  *   post:
- *     summary: Add agenda items to an existing board paper
- *     tags: [Board Papers]
+ *     summary: Add agenda items to an existing board meeting
+ *     tags: [Board Meetings]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Board paper ID
+ *         description: Board meeting ID
  *     requestBody:
  *       required: true
  *       content:
@@ -310,23 +310,22 @@ router.delete('/:id', boardPaperController.deleteBoardPaper);
  *               type: object
  *               properties:
  *                 success:
- *                   type: boolean
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/BoardPaper'
+ *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
  *       404:
- *         description: Board paper not found
+ *         description: Board meeting not found
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/agenda-items', boardPaperController.addAgendaItems);
+router.post('/:id/agenda-items', boardMeetingController.addAgendaItems);
 
 /**
  * @swagger
- * /api/board-papers/health:
+ * /api/board-meetings/health:
  *   get:
  *     summary: Health check endpoint
  *     tags: [Health]
@@ -348,6 +347,6 @@ router.post('/:id/agenda-items', boardPaperController.addAgendaItems);
  *                 version:
  *                   type: string
  */
-router.get('/health', boardPaperController.healthCheck);
+router.get('/health', boardMeetingController.healthCheck);
 
 export default router; 

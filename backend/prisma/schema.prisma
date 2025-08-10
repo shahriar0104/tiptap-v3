@@ -19,26 +19,26 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  boardPapers BoardPaper[]
+  boardMeetings BoardMeeting[]
 
   @@map("users")
 }
 
-model BoardPaper {
+model BoardMeeting {
   id          String   @id @default(cuid())
   title       String
   description String?
-  status      BoardPaperStatus @default(DRAFT)
+  status      BoardMeetingStatus @default(DRAFT)
   meetingDate DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  authorId String
-  author   User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  userId String
+  author   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   agendaItems AgendaItem[]
 
-  @@map("board_papers")
+  @@map("board_meetings")
 }
 
 model AgendaItem {
@@ -52,8 +52,8 @@ model AgendaItem {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  boardPaperId String
-  boardPaper   BoardPaper @relation(fields: [boardPaperId], references: [id], onDelete: Cascade)
+  boardMeetingId String
+  boardMeeting   BoardMeeting @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
 
   @@map("agenda_items")
 }
@@ -61,10 +61,11 @@ model AgendaItem {
 enum UserRole {
   ADMIN
   USER
-  MODERATOR
+  EDITOR
+  BOARD_MEMBER
 }
 
-enum BoardPaperStatus {
+enum BoardMeetingStatus {
   DRAFT
   PUBLISHED
   ARCHIVED

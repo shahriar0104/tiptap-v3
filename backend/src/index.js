@@ -148,10 +148,10 @@ const startServer = async () => {
     await database.connect();
     
     // Import routes AFTER database connection is established
-    const boardPaperRoutes = (await import('./routes/boardPaperRoutes.js')).default;
+    const boardMeetingRoutes = (await import('./routes/boardMeetingRoutes.js')).default;
     
     // Set up API routes
-    app.use('/api/board-papers', boardPaperRoutes);
+    app.use('/api/board-meetings', boardMeetingRoutes);
     
     // Start the server
     const server = app.listen(config.port, () => {

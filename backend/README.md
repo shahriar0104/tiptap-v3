@@ -24,14 +24,14 @@ backend/
 │   │   ├── app.js       # App configuration
 │   │   └── database.js  # Database connection
 │   ├── controllers/      # Request handlers
-│   │   └── boardPaperController.js
+│   │   └── boardMeetingController.js
 │   ├── middleware/       # Custom middleware
 │   │   ├── cors.js      # CORS configuration
 │   │   └── errorHandler.js # Error handling
 │   ├── routes/          # Route definitions
-│   │   └── boardPaperRoutes.js
+│   │   └── boardMeetingRoutes.js
 │   ├── services/        # Business logic
-│   │   └── boardPaperService.js
+│   │   └── boardMeetingService.js
 │   ├── utils/           # Helper functions
 │   │   └── validation.js # Zod validation schemas
 │   └── index.js         # Main application file
@@ -219,11 +219,11 @@ curl -X PUT http://localhost:3001/api/board-papers/{id} \
 - `createdAt` (DateTime)
 - `updatedAt` (DateTime)
 
-#### BoardPaper
+#### BoardMeeting
 - `id` (String, Primary Key)
 - `title` (String)
 - `description` (String, Optional)
-- `status` (BoardPaperStatus Enum)
+- `status` (BoardMeetingStatus Enum)
 - `meetingDate` (DateTime, Optional)
 - `authorId` (String, Foreign Key to User)
 - `createdAt` (DateTime)
@@ -236,7 +236,7 @@ curl -X PUT http://localhost:3001/api/board-papers/{id} \
 - `order` (Integer)
 - `duration` (Integer, Optional, minutes)
 - `status` (AgendaItemStatus Enum)
-- `boardPaperId` (String, Foreign Key to BoardPaper)
+- `boardMeetingId` (String, Foreign Key to BoardMeeting)
 - `createdAt` (DateTime)
 - `updatedAt` (DateTime)
 
@@ -245,9 +245,10 @@ curl -X PUT http://localhost:3001/api/board-papers/{id} \
 #### UserRole
 - `ADMIN`
 - `USER`
-- `MODERATOR`
+- `EDITOR`
+- `BOARD_MEMBER`
 
-#### BoardPaperStatus
+#### BoardMeetingStatus
 - `DRAFT`
 - `PUBLISHED`
 - `ARCHIVED`

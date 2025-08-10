@@ -23,10 +23,10 @@ describe('Board Papers API', () => {
     });
   });
 
-  describe('Board Papers', () => {
-    it('should create a board paper with agenda items', async () => {
-      const boardPaperData = {
-        title: 'Test Board Paper',
+  describe('Board Meetings', () => {
+    it('should create a board meeting with agenda items', async () => {
+      const boardMeetingData = {
+        title: 'Test Board Meeting',
         description: 'Test description',
         status: 'DRAFT',
         meetingDate: '2025-01-15T10:00:00Z',
@@ -49,12 +49,12 @@ describe('Board Papers API', () => {
       };
 
       const response = await request(app)
-        .post('/api/board-papers')
-        .send(boardPaperData)
+        .post('/api/board-meetings')
+        .send(boardMeetingData)
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.title).toBe(boardPaperData.title);
+      expect(response.body.data.title).toBe(boardMeetingData.title);
       expect(response.body.data.agendaItems).toHaveLength(2);
     });
 

@@ -8,7 +8,7 @@ async function main() {
   // Clean up existing data
   console.log('🧹 Cleaning up existing data...');
   await prisma.agendaItem.deleteMany();
-  await prisma.boardPaper.deleteMany();
+  await prisma.boardMeeting.deleteMany();
   await prisma.user.deleteMany();
 
   // Create sample users
@@ -32,19 +32,26 @@ async function main() {
       data: {
         email: 'mike.johnson@company.com',
         name: 'Mike Johnson',
-        role: 'MODERATOR',
+        role: 'EDITOR',
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'shadman.shahriar@dsinnovators.com',
+        name: 'Shadman Shahriar',
+        role: 'BOARD_MEMBER',
       },
     }),
   ]);
 
   console.log(`✅ Created ${users.length} users`);
 
-  // Create sample board papers with agenda items
-  console.log('📋 Creating sample board papers...');
+  // Create sample board meetings with agenda items
+  console.log('📋 Creating sample board meetings...');
 
-  const boardPapers = await Promise.all([
-    // Board Paper 1: Quarterly Review
-    prisma.boardPaper.create({
+  const boardMeetings = await Promise.all([
+    // Board Meeting 1: Quarterly Review
+    prisma.boardMeeting.create({
       data: {
         title: 'Q4 2024 Quarterly Review',
         description: 'Comprehensive review of Q4 2024 performance and strategic planning for Q1 2025',
@@ -87,7 +94,7 @@ async function main() {
     }),
 
     // Board Paper 2: Product Launch
-    prisma.boardPaper.create({
+    prisma.boardMeeting.create({
       data: {
         title: 'New Product Launch Strategy',
         description: 'Strategy and planning for the upcoming product launch',
@@ -130,7 +137,7 @@ async function main() {
     }),
 
     // Board Paper 3: Budget Approval
-    prisma.boardPaper.create({
+    prisma.boardMeeting.create({
       data: {
         title: '2025 Budget Approval',
         description: 'Annual budget review and approval for 2025',
@@ -173,7 +180,7 @@ async function main() {
     }),
 
     // Board Paper 4: Technology Infrastructure
-    prisma.boardPaper.create({
+    prisma.boardMeeting.create({
       data: {
         title: 'Technology Infrastructure Upgrade',
         description: 'Planning for major technology infrastructure upgrades',
@@ -216,7 +223,7 @@ async function main() {
     }),
 
     // Board Paper 5: HR Policies
-    prisma.boardPaper.create({
+    prisma.boardMeeting.create({
       data: {
         title: 'HR Policy Updates',
         description: 'Review and approval of updated HR policies and procedures',
@@ -259,7 +266,7 @@ async function main() {
     }),
   ]);
 
-  console.log(`✅ Created ${boardPapers.length} board papers with agenda items`);
+  console.log(`✅ Created ${boardMeetings.length} board meetings with agenda items`);
 
   // Create additional agenda items for some board papers
   console.log('📝 Adding additional agenda items...');
@@ -274,7 +281,7 @@ async function main() {
           order: 5,
           duration: 20,
           status: 'PENDING',
-          boardPaperId: boardPapers[0].id,
+          boardMeetingId: boardMeetings[0].id,
         },
         {
           title: 'Next Steps',
@@ -282,12 +289,12 @@ async function main() {
           order: 6,
           duration: 15,
           status: 'PENDING',
-          boardPaperId: boardPapers[0].id,
+          boardMeetingId: boardMeetings[0].id,
         },
       ],
     }),
 
-    // Add more agenda items to the second board paper
+    // Add more agenda items to the second board meeting
     prisma.agendaItem.createMany({
       data: [
         {
@@ -296,7 +303,7 @@ async function main() {
           order: 5,
           duration: 20,
           status: 'PENDING',
-          boardPaperId: boardPapers[1].id,
+          boardMeetingId: boardMeetings[1].id,
         },
         {
           title: 'Resource Allocation',
@@ -304,7 +311,7 @@ async function main() {
           order: 6,
           duration: 25,
           status: 'PENDING',
-          boardPaperId: boardPapers[1].id,
+          boardMeetingId: boardMeetings[1].id,
         },
       ],
     }),
@@ -314,18 +321,18 @@ async function main() {
 
   // Summary
   const userCount = await prisma.user.count();
-  const boardPaperCount = await prisma.boardPaper.count();
+  const boardMeetingCount = await prisma.boardMeeting.count();
   const agendaItemCount = await prisma.agendaItem.count();
 
   console.log('\n🎉 Database seeding completed successfully!');
   console.log(`📊 Summary:`);
   console.log(`   👥 Users: ${userCount}`);
-  console.log(`   📋 Board Papers: ${boardPaperCount}`);
+  console.log(`   📋 Board Meetings: ${boardMeetingCount}`);
   console.log(`   📝 Agenda Items: ${agendaItemCount}`);
   console.log('\n🔗 Sample API endpoints to test:');
-  console.log(`   GET /api/board-papers`);
-  console.log(`   GET /api/board-papers/${boardPapers[0].id}`);
-  console.log(`   POST /api/board-papers (with agenda items)`);
+  console.log(`   GET /api/board-meetings`);
+  console.log(`   GET /api/board-meetings/${boardMeetings[0].id}`);
+  console.log(`   POST /api/board-meetings (with agenda items)`);
 }
 
 main()

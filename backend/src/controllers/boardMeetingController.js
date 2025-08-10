@@ -1,27 +1,27 @@
-import boardPaperService from '../services/boardPaperService.js';
+import boardMeetingService from '../services/boardMeetingService.js';
 
-class BoardPaperController {
+class BoardMeetingController {
   /**
-   * Create a new board paper with agenda items
+   * Create a new board meeting with agenda items
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async createBoardPaper(req, res) {
+  async createBoardMeeting(req, res) {
     try {
       const { title, description, status, meetingDate, agendaItems } = req.validatedData;
       
       // For now, use a default author ID (in production, this would come from auth middleware)
       const authorId = req.user?.id || 'default-author-id';
       
-      const boardPaperData = {
+      const boardMeetingData = {
         title,
         description,
         status,
         meetingDate,
       };
 
-      const result = await boardPaperService.createBoardPaperWithAgendaItems(
-        boardPaperData,
+      const result = await boardMeetingService.createBoardMeetingWithAgendaItems(
+        boardMeetingData,
         agendaItems,
         authorId
       );
@@ -32,7 +32,7 @@ class BoardPaperController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Controller error - createBoardPaper:', error);
+      console.error('Controller error - createBoardMeeting:', error);
       
       if (error.message.includes('already exists')) {
         return res.status(409).json({
@@ -50,22 +50,22 @@ class BoardPaperController {
       
       res.status(500).json({
         success: false,
-        message: 'Failed to create board paper',
+        message: 'Failed to create board meeting',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }
   }
 
   /**
-   * Get a board paper by ID
+   * Get a board meeting by ID
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async getBoardPaper(req, res) {
+  async getBoardMeeting(req, res) {
     try {
       const { id } = req.params;
       
-      const result = await boardPaperService.getBoardPaperById(id);
+      const result = await boardMeetingService.getBoardMeetingById(id);
       
       res.status(200).json({
         success: true,
@@ -73,9 +73,9 @@ class BoardPaperController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Controller error - getBoardPaper:', error);
+      console.error('Controller error - getBoardMeeting:', error);
       
-      if (error.message === 'Board paper not found') {
+      if (error.message === 'Board meeting not found') {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -84,18 +84,18 @@ class BoardPaperController {
       
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch board paper',
+        message: 'Failed to fetch board meeting',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }
   }
 
   /**
-   * Get all board papers with optional filtering
+   * Get all board meetings with optional filtering
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async getAllBoardPapers(req, res) {
+  async getAllBoardMeetings(req, res) {
     try {
       const { status, authorId, limit, offset } = req.query;
       
@@ -106,7 +106,7 @@ class BoardPaperController {
         offset: offset ? parseInt(offset) : 0,
       };
       
-      const result = await boardPaperService.getAllBoardPapers(filters);
+      const result = await boardMeetingService.getAllBoardMeetings(filters);
       
       res.status(200).json({
         success: true,
@@ -119,27 +119,27 @@ class BoardPaperController {
         },
       });
     } catch (error) {
-      console.error('Controller error - getAllBoardPapers:', error);
+      console.error('Controller error - getAllBoardMeetings:', error);
       
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch board papers',
+        message: 'Failed to fetch board meetings',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }
   }
 
   /**
-   * Update a board paper
+   * Update a board meeting
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async updateBoardPaper(req, res) {
+  async updateBoardMeeting(req, res) {
     try {
       const { id } = req.params;
       const updateData = req.validatedData;
       
-      const result = await boardPaperService.updateBoardPaper(id, updateData);
+      const result = await boardMeetingService.updateBoardMeeting(id, updateData);
       
       res.status(200).json({
         success: true,
@@ -147,9 +147,9 @@ class BoardPaperController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Controller error - updateBoardPaper:', error);
+      console.error('Controller error - updateBoardMeeting:', error);
       
-      if (error.message === 'Board paper not found') {
+      if (error.message === 'Board meeting not found') {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -158,31 +158,31 @@ class BoardPaperController {
       
       res.status(500).json({
         success: false,
-        message: 'Failed to update board paper',
+        message: 'Failed to update board meeting',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }
   }
 
   /**
-   * Delete a board paper
+   * Delete a board meeting
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async deleteBoardPaper(req, res) {
+  async deleteBoardMeeting(req, res) {
     try {
       const { id } = req.params;
       
-      const result = await boardPaperService.deleteBoardPaper(id);
+      const result = await boardMeetingService.deleteBoardMeeting(id);
       
       res.status(200).json({
         success: true,
         message: result.message,
       });
     } catch (error) {
-      console.error('Controller error - deleteBoardPaper:', error);
+      console.error('Controller error - deleteBoardMeeting:', error);
       
-      if (error.message === 'Board paper not found') {
+      if (error.message === 'Board meeting not found') {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -191,14 +191,14 @@ class BoardPaperController {
       
       res.status(500).json({
         success: false,
-        message: 'Failed to delete board paper',
+        message: 'Failed to delete board meeting',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
       });
     }
   }
 
   /**
-   * Add agenda items to an existing board paper
+   * Add agenda items to an existing board meeting
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
@@ -214,7 +214,7 @@ class BoardPaperController {
         });
       }
       
-      const result = await boardPaperService.addAgendaItems(id, agendaItems);
+      const result = await boardMeetingService.addAgendaItems(id, agendaItems);
       
       res.status(200).json({
         success: true,
@@ -224,7 +224,7 @@ class BoardPaperController {
     } catch (error) {
       console.error('Controller error - addAgendaItems:', error);
       
-      if (error.message === 'Board paper not found') {
+      if (error.message === 'Board meeting not found') {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -247,11 +247,11 @@ class BoardPaperController {
   async healthCheck(req, res) {
     res.status(200).json({
       success: true,
-      message: 'Board paper service is healthy',
+      message: 'Board meeting service is healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     });
   }
 }
 
-export default new BoardPaperController(); 
+export default new BoardMeetingController(); 
