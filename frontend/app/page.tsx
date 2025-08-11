@@ -25,7 +25,7 @@ export default function Dashboard() {
           <CardButton
             href="/meeting/new"
             title="Create New Meeting"
-            description="Set up a new board meeting with agenda and documentation"
+            description="Set up a new board meeting with agenda"
             icon={<MdAdd className="w-6 h-6" />}
             tone="brand"
           />
