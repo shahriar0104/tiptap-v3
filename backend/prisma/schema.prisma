@@ -6,17 +6,41 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  domain      String?  // Optional company domain for email verification
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  boardMeetings BoardMeeting[]
+
+  @@map("organizations")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  avatar       String?  // Profile picture URL
+  passwordHash String?  // Hashed password for email/password auth
+  role         UserRole @default(MEMBER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Organization relation
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Relations
   boardMeetings BoardMeeting[]
@@ -35,7 +59,11 @@ model BoardMeeting {
 
   // Relations
   userId String
-  author   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
   agendaItems AgendaItem[]
 
   @@map("board_meetings")
@@ -59,10 +87,10 @@ model AgendaItem {
 }
 
 enum UserRole {
-  ADMIN
-  USER
-  EDITOR
-  BOARD_MEMBER
+  ADMIN        // Organization admin (first user)
+  MEMBER       // Regular organization member
+  EDITOR       // Can edit meetings and agendas
+  BOARD_MEMBER // Board member with special permissions
 }
 
 enum BoardMeetingStatus {

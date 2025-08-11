@@ -1,10 +1,7 @@
 import express from 'express';
 import boardMeetingController from '../controllers/boardMeetingController.js';
-import {
-  validateCreateBoardMeeting,
-  validateUpdateBoardMeeting,
-  validateId,
-} from '../utils/validation.js';
+import { validateBoardMeeting, validateUpdateBoardMeeting, validateAgendaItem, validateId } from '../middleware/validation.js';
+import { authenticateUser, requireEditor } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -69,6 +66,8 @@ const router = express.Router();
  *   post:
  *     summary: Create a new board meeting with agenda items
  *     tags: [Board Meetings]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -96,7 +95,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', validateCreateBoardMeeting, boardMeetingController.createBoardMeeting);
+router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.createBoardMeeting);
 
 /**
  * @swagger

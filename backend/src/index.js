@@ -10,6 +10,8 @@ import { config } from './config/app.js';
 import database from './config/database.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import corsMiddleware, { corsErrorHandler } from './middleware/cors.js';
+import boardMeetingRoutes from './routes/boardMeetingRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -158,8 +160,10 @@ const startServer = async () => {
     console.log('🚀 Starting server...');
     await database.connect();
     
-    const boardMeetingRoutes = (await import('./routes/boardMeetingRoutes.js')).default;
+    // Mount routes
+    console.log('Mounting routes...');
     app.use('/api/board-meetings', boardMeetingRoutes);
+    app.use('/api/auth', authRoutes);
     console.log('✅ Routes mounted successfully');
     
     // 404 handler (must be after routes)

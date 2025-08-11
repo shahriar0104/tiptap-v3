@@ -22,7 +22,7 @@ class BoardMeetingService {
    * @param {string} authorId - ID of the author
    * @returns {Object} Created board meeting with agenda items
    */
-  async createBoardMeetingWithAgendaItems(boardMeetingData, agendaItems, authorId) {
+  async createBoardMeetingWithAgendaItems(boardMeetingData, agendaItems, authorId, organizationId) {
     try {
       const result = await database.transaction(async (tx) => {
         // Create the board meeting
@@ -30,6 +30,7 @@ class BoardMeetingService {
           data: {
             ...boardMeetingData,
             authorId,
+            organizationId,
             meetingDate: boardMeetingData.meetingDate ? new Date(boardMeetingData.meetingDate) : null,
           },
         });

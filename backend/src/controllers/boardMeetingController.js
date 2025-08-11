@@ -6,29 +6,23 @@ class BoardMeetingController {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async createBoardMeeting(req, res) {
+  async createBoardMeeting(req, res, next) {
     try {
-      const { title, description, status, meetingDate, agendaItems } = req.validatedData;
+      const { boardMeetingData, agendaItems } = req.body;
+      const authorId = req.user?.id || req.body.authorId || 'default-user-id';
+      const organizationId = req.user?.organizationId;
       
-      // For now, use a default author ID (in production, this would come from auth middleware)
-      const authorId = req.user?.id || 'default-author-id';
-      
-      const boardMeetingData = {
-        title,
-        description,
-        status,
-        meetingDate,
-      };
-
-      const result = await boardMeetingService.createBoardMeetingWithAgendaItems(
+      const boardMeeting = await boardMeetingService.createBoardMeetingWithAgendaItems(
         boardMeetingData,
         agendaItems,
-        authorId
+        authorId,
+        organizationId
       );
 
       res.status(201).json({
         success: true,
-        message: result.message,
+        message: boardMeeting.message,
+        data: boardMeeting.data,
         data: result.data,
       });
     } catch (error) {
@@ -166,6 +160,26 @@ class BoardMeetingController {
 
   /**
    * Delete a board meeting
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getAllBoardMeetings(req, res, next) {
+    try {
+      // Filter by organization if user is authenticated
+      const organizationId = req.user?.organizationId;
+      const boardMeetings = await boardMeetingService.getAllBoardMeetings(organizationId);
+      
+      res.status(200).json({
+        success: true,
+        data: boardMeetings,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete a board meeting by ID
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
