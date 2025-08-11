@@ -3,7 +3,7 @@ import AgendaBuilder from "@/components/agenda/AgendaBuilder";
 async function getPaper(id: string) {
   // Replace with your API. Fallback sample mirrors screenshots.
   try {
-    const res = await fetch(`${process.env.API_BASE_URL || "http://localhost:4000"}/papers/${id}`, {
+    const res = await fetch(`${process.env.API_BASE_URL || "http://localhost:4000"}/api/board-meetings/${id}`, {
       cache: "no-store",
     });
     if (res.ok) return await res.json();

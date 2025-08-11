@@ -51,7 +51,7 @@ export default function AgendaBuilder({
 
   async function saveAll() {
     // Hook up to your API
-    await api.post(`/papers/${paperId}/agenda-groups`, { groups });
+    await api.post(`/board-meetings/${paperId}/agenda-groups`, { groups });
     alert("Saved agenda.");
   }
 

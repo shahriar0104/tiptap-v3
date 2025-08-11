@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 export const config = {
   // Server configuration
-  port: process.env.PORT || 3001,
+  port: process.env.PORT || 4000,
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // Database configuration
@@ -46,7 +46,8 @@ export const config = {
   cors: {
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
+      'http://localhost:4000'
     ],
   },
   

@@ -323,30 +323,4 @@ router.delete('/:id', boardMeetingController.deleteBoardMeeting);
  */
 router.post('/:id/agenda-items', boardMeetingController.addAgendaItems);
 
-/**
- * @swagger
- * /api/board-meetings/health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [Health]
- *     responses:
- *       200:
- *         description: Service is healthy
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                 version:
- *                   type: string
- */
-router.get('/health', boardMeetingController.healthCheck);
-
 export default router; 

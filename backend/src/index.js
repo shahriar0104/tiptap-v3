@@ -121,24 +121,35 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
-app.use(notFoundHandler);
-
-// Error handling middleware (must be last)
-app.use(errorHandler);
+// Note: 404 and error handlers are moved to startServer() function after routes are mounted
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await database.disconnect();
-  process.exit(0);
-});
+let server;
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await database.disconnect();
-  process.exit(0);
-});
+const gracefulShutdown = async (signal) => {
+  console.log(`${signal} received, shutting down gracefully`);
+  
+  if (server) {
+    server.close(async () => {
+      console.log('HTTP server closed');
+      await database.disconnect();
+      console.log('Database disconnected');
+      process.exit(0);
+    });
+    
+    // Force close after 10 seconds
+    setTimeout(() => {
+      console.log('Forcing shutdown...');
+      process.exit(1);
+    }, 10000);
+  } else {
+    await database.disconnect();
+    process.exit(0);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Start server
 const startServer = async () => {
@@ -147,14 +158,18 @@ const startServer = async () => {
     console.log('🚀 Starting server...');
     await database.connect();
     
-    // Import routes AFTER database connection is established
     const boardMeetingRoutes = (await import('./routes/boardMeetingRoutes.js')).default;
-    
-    // Set up API routes
     app.use('/api/board-meetings', boardMeetingRoutes);
+    console.log('✅ Routes mounted successfully');
+    
+    // 404 handler (must be after routes)
+    app.use(notFoundHandler);
+    
+    // Error handling middleware (must be last)
+    app.use(errorHandler);
     
     // Start the server
-    const server = app.listen(config.port, () => {
+    server = app.listen(config.port, () => {
       console.log(`🚀 Server running on port ${config.port}`);
       console.log(`📚 API Documentation: http://localhost:${config.port}/api-docs`);
       console.log(`🏥 Health Check: http://localhost:${config.port}/health`);

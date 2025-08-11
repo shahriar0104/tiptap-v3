@@ -141,7 +141,7 @@ class BoardMeetingService {
       const where = {};
       if (status) where.status = status;
       if (authorId) where.authorId = authorId;
-
+      
       const boardMeetings = await this.prisma.boardMeeting.findMany({
         where,
         include: {
@@ -154,7 +154,7 @@ class BoardMeetingService {
           },
           agendaItems: {
             orderBy: { order: 'asc' },
-            take: 5, // Limit agenda items for list view
+            take: 5, // Limit agenda items for the list view
           },
           _count: {
             select: {

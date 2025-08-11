@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DatePicker from "@/components/ui-helper/DatePicker";
@@ -21,7 +22,7 @@ export default function NewMeetingPage() {
     };
 
     try {
-      const response = await fetch('/api/papers', {
+      const response = await fetch('/api/board-meetings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -238,20 +238,6 @@ class BoardMeetingController {
       });
     }
   }
-
-  /**
-   * Health check endpoint
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async healthCheck(req, res) {
-    res.status(200).json({
-      success: true,
-      message: 'Board meeting service is healthy',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-    });
-  }
 }
 
 export default new BoardMeetingController(); 

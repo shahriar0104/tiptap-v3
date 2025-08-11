@@ -1,4 +1,8 @@
+"use client"
+
 import Link from "next/link";
+import { ReactNode } from "react";
+import { motion } from "framer-motion";
 
 export default function CardButton({
                                      href,
@@ -10,22 +14,42 @@ export default function CardButton({
   href: string;
   title: string;
   description?: string;
-  icon?: string;
+  icon?: string | ReactNode;
   tone?: "brand" | "neutral";
 }) {
   const isBrand = tone === "brand";
 
   return (
-    <Link
-      href={href}
-      className={`
-        group relative block p-6 rounded-xl border transition-all duration-200
-        hover:scale-[1.02] hover:shadow-lg hover:-translate-y-1
-        ${isBrand
-        ? "bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100 dark:bg-blue-950/30 dark:border-blue-800 dark:hover:border-blue-700 dark:hover:bg-blue-900/40"
-        : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-gray-800"
-      }
-      `}
+    <Link href={href}>
+      <motion.div
+        initial={false} // avoid SSR/client mismatch
+        whileHover={{ 
+          scale: 1.02, 
+          y: -8,
+          transition: { 
+            type: "spring", 
+            stiffness: 400, 
+            damping: 25,
+            mass: 0.8
+          }
+        }}
+        whileTap={{ 
+          scale: 0.98,
+          transition: { 
+            type: "spring", 
+            stiffness: 600, 
+            damping: 30 
+          }
+        }}
+        className={`
+          group relative block p-6 rounded-xl border transform-gpu
+          transition-all duration-200 ease-out hover:shadow-xl
+          min-h-[180px] flex flex-col
+          ${isBrand
+          ? "bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100 dark:bg-blue-950/30 dark:border-blue-800 dark:hover:border-blue-700 dark:hover:bg-blue-900/40"
+          : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-gray-800"
+        }
+        `}
     >
       <div className="flex items-start justify-between mb-4">
         {icon && (
@@ -52,7 +76,7 @@ export default function CardButton({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 flex-1 flex flex-col">
         <h3 className={`
           font-semibold text-base
           ${isBrand
@@ -64,7 +88,7 @@ export default function CardButton({
         </h3>
         {description && (
           <p className={`
-            text-sm leading-relaxed
+            text-sm leading-relaxed flex-1
             ${isBrand
             ? "text-blue-700 dark:text-blue-300"
             : "text-gray-600 dark:text-gray-400"
@@ -74,6 +98,7 @@ export default function CardButton({
           </p>
         )}
       </div>
+      </motion.div>
     </Link>
   );
 }

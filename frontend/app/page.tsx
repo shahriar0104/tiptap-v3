@@ -1,4 +1,11 @@
 import CardButton from "@/components/ui-helper/CardButton";
+import { 
+  MdAdd, 
+  MdHistory, 
+  MdLink, 
+  MdPictureAsPdf, 
+  MdFolder 
+} from "react-icons/md";
 
 export default function Dashboard() {
   return (
@@ -16,17 +23,17 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <CardButton
-            href="/agenda/new"
+            href="/meeting/new"
             title="Create New Meeting"
             description="Set up a new board meeting with agenda and documentation"
-            icon="📋"
+            icon={<MdAdd className="w-6 h-6" />}
             tone="brand"
           />
           <CardButton
-            href="/meetings"
+            href="/meeting/past"
             title="View Past Meetings"
             description="Browse previous board meetings and their records"
-            icon="📚"
+            icon={<MdHistory className="w-6 h-6" />}
           />
         </div>
       </section>
@@ -46,21 +53,21 @@ export default function Dashboard() {
           <CardButton
             href="/connectors/zero"
             title="Zero Connector"
-            description="Connect to Zero for automated data sync"
-            icon="🔗"
+            description="Automated data sync"
+            icon={<MdLink className="w-6 h-6" />}
             tone="brand"
           />
           <CardButton
             href="/import/pdf"
             title="PDF Import"
             description="Upload and process PDF documents"
-            icon="📄"
+            icon={<MdPictureAsPdf className="w-6 h-6" />}
           />
           <CardButton
             href="/repo"
             title="Document Repository"
             description="Browse and search all your documents"
-            icon="🗂️"
+            icon={<MdFolder className="w-6 h-6" />}
           />
         </div>
       </section>
