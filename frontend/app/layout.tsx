@@ -5,7 +5,7 @@ import React from "react";
 import {cookies} from 'next/headers';
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {AuthProvider} from "@/contexts/AuthContext";
-import Sidebar from "@/components/dashboard/Sidebar";
+import ConditionalLayout from "@/components/layout/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,13 +38,9 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-        <div className="min-h-screen grid grid-cols-12">
-          {/* Sidebar on lg+, stacked on mobile */}
-          <aside className="col-span-12 lg:col-span-3 xl:col-span-2 border-r border-black/5 dark:border-white/10 bg-background">
-            <Sidebar />
-          </aside>
-          <main className="col-span-12 lg:col-span-9 xl:col-span-10 p-4 sm:p-6 lg:p-8">{children}</main>
-        </div>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </body>
       </AuthProvider>
     </ThemeProvider>

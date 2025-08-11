@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {usePathname} from "next/navigation";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import React, {ReactNode} from "react";
+import {MdDarkMode, MdDashboard, MdFolder, MdLightMode} from "react-icons/md";
 
 function NavItem({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
   const pathname = usePathname();
@@ -38,8 +39,8 @@ export default function Sidebar() {
         </div>
       </div>
       <nav className="flex flex-col gap-1 flex-1">
-        <NavItem href="/" label="Dashboard" icon={<span aria-hidden className="text-base">🏠</span>} />
-        <NavItem href="/documents" label="My Documents" icon={<span aria-hidden className="text-base">📄</span>} />
+        <NavItem href="/dashboard" label="Dashboard" icon={<MdDashboard className="w-5 h-5" />} />
+        <NavItem href="/documents" label="My Documents" icon={<MdFolder className="w-5 h-5" />} />
       </nav>
 
       {/* Icon-only theme toggle */}
@@ -50,7 +51,7 @@ export default function Sidebar() {
           aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
           className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 transition-all duration-200 border border-gray-300 dark:border-gray-600"
         >
-          <span className="text-base">{theme === 'light' ? '🌙' : '☀️'}</span>
+          {theme === 'light' ? <MdDarkMode className="w-5 h-5" /> : <MdLightMode className="w-5 h-5" />}
         </button>
       </div>
     </div>
