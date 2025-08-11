@@ -28,15 +28,14 @@ model Organization {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  avatar       String?  // Profile picture URL
-  passwordHash String?  // Hashed password for email/password auth
-  role         UserRole @default(MEMBER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String   @id // Supabase user ID (UUID)
+  email      String   @unique
+  name       String?
+  avatar     String?  // Profile picture URL
+  role       UserRole @default(MEMBER)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Organization relation
   organizationId String?

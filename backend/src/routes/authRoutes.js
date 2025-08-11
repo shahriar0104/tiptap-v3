@@ -1,6 +1,6 @@
 import express from 'express';
 import authController from '../controllers/authController.js';
-import { authenticateUser, requireAdmin } from '../middleware/auth.js';
+import {authenticateUser, requireAdmin} from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -77,6 +77,18 @@ router.post('/google', authController.googleAuth);
 
 /**
  * @swagger
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Handle Google OAuth callback
+ *     tags: [Authentication]
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with token or error
+ */
+router.get('/google/callback', authController.googleCallback);
+
+/**
+ * @swagger
  * /api/auth/logout:
  *   post:
  *     summary: Logout user
@@ -86,6 +98,66 @@ router.post('/google', authController.googleAuth);
  *         description: Logout successful
  */
 router.post('/logout', authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/create-organization:
+ *   post:
+ *     summary: Create organization for authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - organizationName
+ *             properties:
+ *               organizationName:
+ *                 type: string
+ *               domain:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Organization created successfully
+ *       409:
+ *         description: User already belongs to an organization
+ */
+router.post('/create-organization', authenticateUser, authController.createOrganization);
+
+/**
+ * @swagger
+ * /api/auth/join-organization:
+ *   post:
+ *     summary: Join organization for authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - organizationSlug
+ *             properties:
+ *               organizationSlug:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successfully joined organization
+ *       404:
+ *         description: Organization not found
+ *       409:
+ *         description: User already belongs to an organization
+ */
+router.post('/join-organization', authenticateUser, authController.joinOrganization);
 
 /**
  * @swagger

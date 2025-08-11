@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import {useRouter} from 'next/navigation';
+import {useAuth} from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ export default function ProtectedRoute({
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to log in if not authenticated
   if (!user) {
     router.push('/auth/login');
     return null;

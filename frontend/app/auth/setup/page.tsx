@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
-import { MdBusiness, MdDescription, MdDomain, MdGroup } from 'react-icons/md';
+import React, {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {useAuth} from '@/contexts/AuthContext';
+import {api} from '@/lib/api';
+import {MdBusiness, MdDescription, MdDomain, MdGroup} from 'react-icons/md';
 
 export default function OrganizationSetupPage() {
   const [mode, setMode] = useState<'create' | 'join'>('create');
@@ -31,18 +31,19 @@ export default function OrganizationSetupPage() {
     setError('');
 
     try {
-      const response = await api.post('/auth/register-organization', {
+      const response = await api.post<{
+        token: string;
+        organization: any;
+        user: any;
+      }>('/auth/create-organization', {
         organizationName: formData.organizationName,
         domain: formData.domain,
         description: formData.description,
-        user: {
-          email: user?.email,
-          name: user?.name,
-          avatar: user?.avatar,
-        },
       });
 
-      if (response.success) {
+      if (response.success && response.data?.token) {
+        // Update token and redirect
+        localStorage.setItem('auth_token', response.data.token);
         await refreshUser();
         router.push('/');
       } else {
@@ -61,16 +62,17 @@ export default function OrganizationSetupPage() {
     setError('');
 
     try {
-      const response = await api.post('/auth/join-organization', {
+      const response = await api.post<{
+        token: string;
+        organization: any;
+        user: any;
+      }>('/auth/join-organization', {
         organizationSlug: formData.organizationSlug,
-        userData: {
-          email: user?.email,
-          name: user?.name,
-          avatar: user?.avatar,
-        },
       });
 
-      if (response.success) {
+      if (response.success && response.data?.token) {
+        // Update token and redirect
+        localStorage.setItem('auth_token', response.data.token);
         await refreshUser();
         router.push('/');
       } else {

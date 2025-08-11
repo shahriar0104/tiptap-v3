@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authApi } from '@/lib/supabase';
+import React, {createContext, useContext, useEffect, useState} from 'react';
+import {authApi} from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -41,15 +41,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
 
-  // Load token from localStorage on mount
+  // Load token from localStorage or URL on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('auth_token');
-    if (savedToken) {
-      setToken(savedToken);
-      refreshUser();
-    } else {
-      setLoading(false);
-    }
+    const initializeAuth = async () => {
+      // Check for token or error in URL (from Google OAuth redirect)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+      const oauthError = urlParams.get('error');
+      
+      if (oauthError) {
+        // Handle OAuth error
+        console.error('OAuth error:', oauthError);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setLoading(false);
+        return;
+      }
+      
+      if (urlToken) {
+        // Token from Google OAuth redirect
+        localStorage.setItem('auth_token', urlToken);
+        setToken(urlToken);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        await refreshUser();
+      } else {
+        // Check for saved token
+        const savedToken = localStorage.getItem('auth_token');
+        if (savedToken) {
+          setToken(savedToken);
+          await refreshUser();
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const refreshUser = async () => {

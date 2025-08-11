@@ -1,6 +1,5 @@
 import database from '../config/database.js';
-import { ApiError } from '../middleware/errorHandler.js';
-import bcrypt from 'bcryptjs';
+import {ApiError} from '../middleware/errorHandler.js';
 
 class OrganizationService {
   constructor() {
@@ -8,7 +7,7 @@ class OrganizationService {
   }
 
   /**
-   * Create a new organization with the first admin user
+   * Create a new organization with the first admin user (Supabase Auth)
    */
   async createOrganization({ name, domain, description, adminUser }) {
     try {
@@ -23,12 +22,6 @@ class OrganizationService {
         counter++;
       }
 
-      // Hash password if provided
-      let passwordHash = null;
-      if (adminUser.password) {
-        passwordHash = await bcrypt.hash(adminUser.password, 12);
-      }
-
       // Create organization and admin user in a transaction
       const result = await this.prisma.$transaction(async (tx) => {
         // Create organization
@@ -41,13 +34,13 @@ class OrganizationService {
           },
         });
 
-        // Create admin user
+        // Create admin user (using Supabase user ID)
         const user = await tx.user.create({
           data: {
+            id: adminUser.id, // Use Supabase user ID
             email: adminUser.email,
             name: adminUser.name,
             avatar: adminUser.avatar,
-            passwordHash,
             role: 'ADMIN',
             organizationId: organization.id,
           },
