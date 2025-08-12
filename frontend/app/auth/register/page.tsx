@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
-import { FcGoogle } from 'react-icons/fc';
-import { MdBusiness, MdEmail, MdPerson, MdDescription, MdDomain, MdLock } from 'react-icons/md';
+import React, {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {useAuth} from '@/contexts/AuthContext';
+import {api} from '@/lib/api';
+import {FcGoogle} from 'react-icons/fc';
+import {MdBusiness, MdDescription, MdDomain, MdEmail, MdLock, MdPerson} from 'react-icons/md';
+import {Organization, User} from "@/shared/types";
+import {useToast} from "@/contexts/ToastProvider";
 
 export default function RegisterPage() {
+  const { successAlert, errorAlert } = useToast();
   const [formData, setFormData] = useState({
     organizationName: '',
     domain: '',
@@ -17,7 +20,6 @@ export default function RegisterPage() {
     password: '',
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -30,14 +32,13 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       // Register organization with admin user directly through backend
       const response = await api.post<{
         token: string;
-        organization: any;
-        user: any;
+        organization: Organization;
+        user: User;
       }>('/auth/register-organization', {
         organizationName: formData.organizationName,
         domain: formData.domain,
@@ -50,14 +51,15 @@ export default function RegisterPage() {
       });
 
       if (response.success && response.data?.token) {
-        // Store token and redirect to dashboard
+        // Store token and redirect to the dashboard
+        successAlert(response.message || 'Successfully registered organization & Admin user');
         localStorage.setItem('auth_token', response.data.token);
         router.push('/');
       } else {
-        setError(response.message || 'Organization registration failed');
+        errorAlert(response.message || 'Organization registration failed');
       }
     } catch (error: any) {
-      setError(error.message || 'Registration failed');
+      errorAlert(error.message || 'Registration failed');
     }
 
     setLoading(false);
@@ -65,12 +67,11 @@ export default function RegisterPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setError('');
 
     const result = await signInWithGoogle();
     
     if (!result.success) {
-      setError(result.error || 'Google login failed');
+      errorAlert(result.error || 'Google login failed');
       setLoading(false);
     }
   };
@@ -94,12 +95,6 @@ export default function RegisterPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-
           <div className="space-y-4">
             {/* Organization Details */}
             <div className="border-b border-gray-200 pb-4">
@@ -111,7 +106,7 @@ export default function RegisterPage() {
                     Organization Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <MdBusiness className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -132,7 +127,7 @@ export default function RegisterPage() {
                     Company Domain (Optional)
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <MdDomain className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -152,7 +147,7 @@ export default function RegisterPage() {
                     Description
                   </label>
                   <div className="relative">
-                    <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                    <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none z-20">
                       <MdDescription className="h-5 w-5 text-gray-400" />
                     </div>
                     <textarea
@@ -179,7 +174,7 @@ export default function RegisterPage() {
                     Full Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <MdPerson className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -200,7 +195,7 @@ export default function RegisterPage() {
                     Email address
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <MdEmail className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -222,7 +217,7 @@ export default function RegisterPage() {
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <MdLock className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -246,7 +241,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? 'Creating organization...' : 'Create organization'}
             </button>
@@ -267,7 +262,7 @@ export default function RegisterPage() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <FcGoogle className="h-5 w-5 mr-2" />
                 Sign up with Google

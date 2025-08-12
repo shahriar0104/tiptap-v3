@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { FcGoogle } from 'react-icons/fc';
-import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import React, {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {useAuth} from '@/contexts/AuthContext';
+import {FcGoogle} from 'react-icons/fc';
+import {MdEmail, MdLock, MdVisibility, MdVisibilityOff} from 'react-icons/md';
+import {useToast} from '@/contexts/ToastProvider';
 
 export default function LoginPage() {
+  const { successAlert, errorAlert } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -19,13 +20,13 @@ export default function LoginPage() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     const result = await signIn(email, password);
     
     if (!result.success) {
-      setError(result.error || 'Login failed');
+      errorAlert(result.error || 'Login failed');
     } else {
+      successAlert('Login successful');
       router.push('/');
     }
     
@@ -34,12 +35,11 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setError('');
 
     const result = await signInWithGoogle();
     
     if (!result.success) {
-      setError(result.error || 'Google login failed');
+      errorAlert(result.error || 'Google login failed');
       setLoading(false);
     }
     // Note: Google login redirects, so we don't set loading to false here
@@ -64,19 +64,13 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleEmailLogin}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
                 Email address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                   <MdEmail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -98,7 +92,7 @@ export default function LoginPage() {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                   <MdLock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -114,7 +108,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer z-20"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -131,7 +125,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -152,7 +146,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <FcGoogle className="h-5 w-5 mr-2" />
                 Sign in with Google

@@ -3,9 +3,10 @@ import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import React from "react";
 import {cookies} from 'next/headers';
-import {ThemeProvider} from "@/components/theme/ThemeProvider";
+import {ThemeProvider} from "@/contexts/ThemeProvider";
 import {AuthProvider} from "@/contexts/AuthContext";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
+import {ToastProvider} from "@/contexts/ToastProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,17 +34,19 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={serverTheme === 'dark' ? 'dark' : ''}>
-    <ThemeProvider serverTheme={serverTheme}>
-      <AuthProvider>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ConditionalLayout>
-            {children}
-          </ConditionalLayout>
-        </body>
-      </AuthProvider>
-    </ThemeProvider>
+      <ThemeProvider serverTheme={serverTheme}>
+        <AuthProvider>
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          >
+            <ToastProvider>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </ToastProvider>
+          </body>
+        </AuthProvider>
+      </ThemeProvider>
     </html>
   );
 }

@@ -23,7 +23,7 @@ class BoardMeetingController {
         success: true,
         message: boardMeeting.message,
         data: boardMeeting.data,
-        data: result.data,
+        // data: result.data,
       });
     } catch (error) {
       console.error('Controller error - createBoardMeeting:', error);

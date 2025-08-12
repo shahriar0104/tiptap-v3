@@ -1,4 +1,4 @@
-import supabase from '../config/supabase.js';
+import supabase, {supabaseAdmin} from '../config/supabase.js';
 import organizationService from '../services/organizationService.js';
 import database from '../config/database.js';
 import {ApiError} from '../middleware/errorHandler.js';
@@ -9,14 +9,15 @@ class AuthController {
    * Generate JWT token for user
    */
   generateToken(user) {
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is missing');
     return jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        sub: user.id,
         email: user.email,
         organizationId: user.organizationId,
-        role: user.role 
+        role: user.role,
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
   }
@@ -24,7 +25,7 @@ class AuthController {
   /**
    * Login with email and password using Supabase Auth
    */
-  async login(req, res, next) {
+  login = async (req, res, next) => {
     try {
       const { email, password } = req.body;
 
@@ -76,7 +77,7 @@ class AuthController {
   /**
    * Register new user using Supabase Auth
    */
-  async register(req, res, next) {
+  register = async (req, res, next) => {
     try {
       const { email, password, name } = req.body;
 
@@ -142,7 +143,7 @@ class AuthController {
   /**
    * Google OAuth login
    */
-  async googleAuth(req, res, next) {
+  googleAuth = async (req, res, next) => {
     try {
       // Generate Google OAuth URL that redirects to backend callback
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -170,7 +171,7 @@ class AuthController {
   /**
    * Handle Google OAuth callback
    */
-  async googleCallback(req, res, next) {
+  googleCallback = async (req, res, next) => {
     try {
       // Get the session from Supabase after OAuth
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -218,7 +219,7 @@ class AuthController {
   /**
    * Create organization for authenticated user
    */
-  async createOrganization(req, res, next) {
+  createOrganization = async (req, res, next) => {
     try {
       const { organizationName, domain, description } = req.body;
       const userId = req.user.userId; // From JWT middleware
@@ -227,7 +228,7 @@ class AuthController {
         throw new ApiError('Organization name is required', 400);
       }
 
-      // Check if user already has an organization
+      // Check if the user already has an organization
       const existingUser = await database.prisma.user.findUnique({
         where: { id: userId },
         include: { organization: true },
@@ -274,7 +275,7 @@ class AuthController {
   /**
    * Join organization for authenticated user
    */
-  async joinOrganization(req, res, next) {
+  joinOrganization = async (req, res, next) => {
     try {
       const { organizationSlug } = req.body;
       const userId = req.user.userId; // From JWT middleware
@@ -330,9 +331,49 @@ class AuthController {
   }
 
   /**
+   * Join an existing organization
+   */
+  // async joinOrganization(req, res, next) {
+  //   try {
+  //     const { organizationSlug, userData } = req.body;
+  //
+  //     if (!organizationSlug || !userData?.email) {
+  //       throw new ApiError('Organization slug and user data required', 400);
+  //     }
+  //
+  //     // Find organization by slug
+  //     const organization = await database.prisma.organization.findUnique({
+  //       where: { slug: organizationSlug },
+  //     });
+  //
+  //     if (!organization) {
+  //       throw new ApiError('Organization not found', 404);
+  //     }
+  //
+  //     // Add user to organization
+  //     const user = await organizationService.addUserToOrganization({
+  //       organizationId: organization.id,
+  //       userData,
+  //       role: 'MEMBER',
+  //     });
+  //
+  //     res.status(201).json({
+  //       success: true,
+  //       message: 'Successfully joined organization',
+  //       data: {
+  //         user,
+  //         organization,
+  //       },
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+
+  /**
    * Logout user
    */
-  async logout(req, res, next) {
+  logout = async (req, res, next) => {
     try {
       // For JWT-based auth, logout is handled client-side by removing the token
       // We could implement token blacklisting here if needed
@@ -345,10 +386,12 @@ class AuthController {
       next(error);
     }
   }
+
   /**
-   * Register a new organization with admin user using Supabase Auth
+   * Register a new organization with an admin user using Supabase Auth
    */
-  async registerOrganization(req, res, next) {
+  registerOrganization = async (req, res, next) => {
+    let supabaseUserId = undefined;
     try {
       const { organizationName, domain, description, user } = req.body;
 
@@ -357,7 +400,7 @@ class AuthController {
         throw new ApiError('Organization name, user email, name, and password are required', 400);
       }
 
-      // Check if user already exists in our database
+      // Check if a user already exists in our database
       const existingUser = await database.prisma.user.findUnique({
         where: { email: user.email },
       });
@@ -377,13 +420,11 @@ class AuthController {
         },
       });
 
-      if (authError) {
+      if (authError || !authData.user) {
         throw new ApiError(authError.message || 'User registration failed', 400);
       }
 
-      if (!authData.user) {
-        throw new ApiError('User registration failed', 400);
-      }
+      supabaseUserId = authData.user.id;
 
       // Create organization with admin user in our database
       const result = await organizationService.createOrganization({
@@ -391,7 +432,7 @@ class AuthController {
         domain,
         description,
         adminUser: {
-          id: authData.user.id, // Use Supabase user ID
+          id: supabaseUserId, // Use Supabase user ID
           email: authData.user.email,
           name: user.name,
           avatar: user.avatar,
@@ -411,6 +452,12 @@ class AuthController {
         },
       });
     } catch (error) {
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(supabaseUserId);
+      } catch (cleanupErr) {
+        console.error('Failed to delete Supabase user after org creation error:', cleanupErr);
+        next(cleanupErr);
+      }
       next(error);
     }
   }
@@ -418,7 +465,7 @@ class AuthController {
   /**
    * Handle user login/registration after Supabase auth
    */
-  async handleAuthCallback(req, res, next) {
+  handleAuthCallback = async (req, res, next) => {
     try {
       const { access_token, user: supabaseUser } = req.body;
 
@@ -474,49 +521,9 @@ class AuthController {
   }
 
   /**
-   * Join an existing organization
-   */
-  async joinOrganization(req, res, next) {
-    try {
-      const { organizationSlug, userData } = req.body;
-
-      if (!organizationSlug || !userData?.email) {
-        throw new ApiError('Organization slug and user data required', 400);
-      }
-
-      // Find organization by slug
-      const organization = await database.prisma.organization.findUnique({
-        where: { slug: organizationSlug },
-      });
-
-      if (!organization) {
-        throw new ApiError('Organization not found', 404);
-      }
-
-      // Add user to organization
-      const user = await organizationService.addUserToOrganization({
-        organizationId: organization.id,
-        userData,
-        role: 'MEMBER',
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'Successfully joined organization',
-        data: {
-          user,
-          organization,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Get current user profile
    */
-  async getProfile(req, res, next) {
+  getProfile = async (req, res, next) => {
     try {
       const user = await database.prisma.user.findUnique({
         where: { id: req.user.id },
@@ -546,7 +553,7 @@ class AuthController {
   /**
    * Update user profile
    */
-  async updateProfile(req, res, next) {
+  updateProfile = async (req, res, next) => {
     try {
       const { name, avatar } = req.body;
       
@@ -574,7 +581,7 @@ class AuthController {
   /**
    * Get organization members (admin only)
    */
-  async getOrganizationMembers(req, res, next) {
+  getOrganizationMembers = async (req, res, next) => {
     try {
       const members = await database.prisma.user.findMany({
         where: {

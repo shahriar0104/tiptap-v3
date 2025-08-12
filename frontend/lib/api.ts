@@ -2,7 +2,7 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data?: T;
@@ -38,7 +38,7 @@ export const api = {
     return response.json();
   },
 
-  async post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<ApiResponse<T>> {
     const token = getAuthToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export const api = {
     return response.json();
   },
 
-  async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<ApiResponse<T>> {
     const token = getAuthToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

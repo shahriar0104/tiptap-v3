@@ -3,7 +3,15 @@ import {ApiError} from '../middleware/errorHandler.js';
 
 class OrganizationService {
   constructor() {
-    this.prisma = database.prisma;
+    this._prisma = null;
+  }
+
+  // Lazy-load the Prisma client
+  get prisma() {
+    if (!this._prisma) {
+      this._prisma = database.getClient();
+    }
+    return this._prisma;
   }
 
   /**
@@ -23,7 +31,7 @@ class OrganizationService {
       }
 
       // Create organization and admin user in a transaction
-      const result = await this.prisma.$transaction(async (tx) => {
+      const result = await database.transaction(async (tx) => {
         // Create organization
         const organization = await tx.organization.create({
           data: {
@@ -34,7 +42,7 @@ class OrganizationService {
           },
         });
 
-        // Create admin user (using Supabase user ID)
+        // Create an admin user (using Supabase user ID)
         const user = await tx.user.create({
           data: {
             id: adminUser.id, // Use Supabase user ID
@@ -61,7 +69,7 @@ class OrganizationService {
    */
   async addUserToOrganization({ organizationId, userData, role = 'MEMBER' }) {
     try {
-      // Check if organization exists
+      // Check if an organization exists
       const organization = await this.prisma.organization.findUnique({
         where: { id: organizationId },
       });

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useTheme} from "@/components/theme/ThemeProvider";
+import {useTheme} from "@/contexts/ThemeProvider";
 import React, {ReactNode} from "react";
 import {MdDarkMode, MdDashboard, MdFolder, MdLightMode} from "react-icons/md";
 
