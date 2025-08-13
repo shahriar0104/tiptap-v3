@@ -63,24 +63,39 @@ model BoardMeeting {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  agendaItems AgendaItem[]
+  agendaGroups AgendaGroup[]
 
   @@map("board_meetings")
 }
 
-model AgendaItem {
+model AgendaGroup {
   id            String   @id @default(cuid())
-  title         String
-  description   String?
+  name          String
   order         Int
-  duration      Int? // in minutes
-  status        AgendaItemStatus @default(PENDING)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
   boardMeetingId String
   boardMeeting   BoardMeeting @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
+
+  agendaItems AgendaItem[]
+
+  @@map("agenda_groups")
+}
+
+model AgendaItem {
+  id            String   @id @default(cuid())
+  title         String
+  order         Int
+  startTime     DateTime @db.Time
+  status        AgendaItemStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  agendaGroupId String
+  agendaGroup   AgendaGroup @relation(fields: [agendaGroupId], references: [id], onDelete: Cascade)
 
   @@map("agenda_items")
 }
