@@ -1,10 +1,19 @@
-import supabase, {supabaseAdmin} from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 import organizationService from '../services/organizationService.js';
 import database from '../config/database.js';
 import {ApiError} from '../middleware/errorHandler.js';
+import {clearAuthCookies, setAuthCookies} from '../middleware/cookieAuth.js';
 import jwt from 'jsonwebtoken';
 
 class AuthController {
+  constructor() {
+    this.login = this.login.bind(this);
+    this.register = this.register.bind(this);
+    this.googleAuth = this.googleAuth.bind(this);
+    this.googleCallback = this.googleCallback.bind(this);
+    this.createOrganization = this.createOrganization.bind(this);
+  }
+
   /**
    * Generate JWT token for user
    */
@@ -25,7 +34,7 @@ class AuthController {
   /**
    * Login with email and password using Supabase Auth
    */
-  login = async (req, res, next) => {
+  async login(req, res, next) {
     try {
       const { email, password } = req.body;
 
@@ -39,15 +48,16 @@ class AuthController {
         password,
       });
 
-      if (authError || !authData.user) {
+      if (authError || !authData.user || !authData.session) {
         throw new ApiError('Invalid email or password', 401);
       }
 
       const supabaseUser = authData.user;
+      const session = authData.session;
 
-      // Find or create user in our database
+      // Find user in our database
       let user = await database.prisma.user.findUnique({
-        where: { email: supabaseUser.email },
+        where: { id: supabaseUser.id },
         include: { organization: true },
       });
 
@@ -57,15 +67,20 @@ class AuthController {
         throw new ApiError('User not found. Please complete registration.', 404);
       }
 
-      // Generate our JWT token
-      const token = this.generateToken(user);
+      // Set secure HTTP-only cookies with Supabase tokens
+      setAuthCookies(res, session.access_token, session.refresh_token);
 
       res.json({
         success: true,
         message: 'Login successful',
         data: {
-          token,
-          user,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            organizationId: user.organizationId,
+          },
           organization: user.organization,
         },
       });
@@ -77,7 +92,7 @@ class AuthController {
   /**
    * Register new user using Supabase Auth
    */
-  register = async (req, res, next) => {
+  async register(req, res, next) {
     try {
       const { email, password, name } = req.body;
 
@@ -123,9 +138,16 @@ class AuthController {
         },
       });
 
+      // If user is confirmed (no email verification required), set cookies
+      if (authData.session) {
+        setAuthCookies(res, authData.session.access_token, authData.session.refresh_token);
+      }
+
       res.status(201).json({
         success: true,
-        message: 'User registered successfully. Please check your email to verify your account, then create or join an organization.',
+        message: authData.session 
+          ? 'User registered and logged in successfully.'
+          : 'User registered successfully. Please check your email to verify your account.',
         data: {
           user: {
             id: user.id,
@@ -133,6 +155,7 @@ class AuthController {
             name: user.name,
             role: user.role,
           },
+          requiresVerification: !authData.session,
         },
       });
     } catch (error) {
@@ -371,12 +394,12 @@ class AuthController {
   // }
 
   /**
-   * Logout user
+   * Logout user by clearing secure HTTP-only cookies
    */
-  logout = async (req, res, next) => {
+  async logout(req, res, next) {
     try {
-      // For JWT-based auth, logout is handled client-side by removing the token
-      // We could implement token blacklisting here if needed
+      // Clear authentication cookies
+      clearAuthCookies(res);
       
       res.json({
         success: true,
@@ -523,10 +546,10 @@ class AuthController {
   /**
    * Get current user profile
    */
-  getProfile = async (req, res, next) => {
+  async getProfile(req, res, next) {
     try {
       const user = await database.prisma.user.findUnique({
-        where: { id: req.user.id },
+        where: { id: req.user.userId },
         include: {
           organization: {
             include: {
@@ -540,6 +563,10 @@ class AuthController {
           },
         },
       });
+
+      if (!user) {
+        throw new ApiError('User not found', 404);
+      }
 
       res.status(200).json({
         success: true,

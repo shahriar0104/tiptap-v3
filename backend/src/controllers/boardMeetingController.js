@@ -163,20 +163,20 @@ class BoardMeetingController {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async getAllBoardMeetings(req, res, next) {
-    try {
-      // Filter by organization if user is authenticated
-      const organizationId = req.user?.organizationId;
-      const boardMeetings = await boardMeetingService.getAllBoardMeetings(organizationId);
-      
-      res.status(200).json({
-        success: true,
-        data: boardMeetings,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
+  // async getAllBoardMeetings(req, res, next) {
+  //   try {
+  //     // Filter by organization if user is authenticated
+  //     const organizationId = req.user?.organizationId;
+  //     const boardMeetings = await boardMeetingService.getAllBoardMeetings(organizationId);
+  //
+  //     res.status(200).json({
+  //       success: true,
+  //       data: boardMeetings,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 
   /**
    * Delete a board meeting by ID

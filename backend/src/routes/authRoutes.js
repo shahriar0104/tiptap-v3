@@ -1,6 +1,7 @@
 import express from 'express';
 import authController from '../controllers/authController.js';
-import {authenticateUser, requireAdmin} from '../middleware/auth.js';
+import {authenticateWithCookies} from '../middleware/cookieAuth.js';
+import {authenticateUser, requireAdmin} from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -101,12 +102,28 @@ router.post('/logout', authController.logout);
 
 /**
  * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *       401:
+ *         description: Authentication required
+ */
+router.get('/profile', authenticateWithCookies, authController.getProfile);
+
+/**
+ * @swagger
  * /api/auth/create-organization:
  *   post:
  *     summary: Create organization for authenticated user
  *     tags: [Authentication]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -128,7 +145,7 @@ router.post('/logout', authController.logout);
  *       409:
  *         description: User already belongs to an organization
  */
-router.post('/create-organization', authenticateUser, authController.createOrganization);
+router.post('/create-organization', authenticateWithCookies, authController.createOrganization);
 
 /**
  * @swagger
@@ -137,7 +154,7 @@ router.post('/create-organization', authenticateUser, authController.createOrgan
  *     summary: Join organization for authenticated user
  *     tags: [Authentication]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -157,7 +174,7 @@ router.post('/create-organization', authenticateUser, authController.createOrgan
  *       409:
  *         description: User already belongs to an organization
  */
-router.post('/join-organization', authenticateUser, authController.joinOrganization);
+router.post('/join-organization', authenticateWithCookies, authController.joinOrganization);
 
 /**
  * @swagger

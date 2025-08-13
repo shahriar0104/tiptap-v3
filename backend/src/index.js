@@ -5,11 +5,12 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import cookieParser from 'cookie-parser';
 
-import { config } from './config/app.js';
+import {config} from './config/app.js';
 import database from './config/database.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import corsMiddleware, { corsErrorHandler } from './middleware/cors.js';
+import {errorHandler, notFoundHandler} from './middleware/errorHandler.js';
+import corsMiddleware, {corsErrorHandler} from './middleware/cors.js';
 import boardMeetingRoutes from './routes/boardMeetingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
@@ -91,6 +92,9 @@ if (config.nodeEnv === 'development') {
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
 
 // Request logging middleware
 app.use((req, res, next) => {

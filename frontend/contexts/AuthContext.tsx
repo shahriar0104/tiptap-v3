@@ -1,7 +1,7 @@
 'use client';
 
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {authApi} from '@/lib/supabase';
+import {api} from '@/lib/api';
 
 interface User {
   id: string;
@@ -9,8 +9,8 @@ interface User {
   name?: string;
   avatar?: string;
   role: 'ADMIN' | 'MEMBER' | 'EDITOR' | 'BOARD_MEMBER';
-  organizationId: string;
-  organization: Organization;
+  organizationId?: string;
+  organization?: Organization;
 }
 
 interface Organization {
@@ -25,10 +25,9 @@ interface AuthContextType {
   user: User | null;
   organization: Organization | null;
   loading: boolean;
-  token: string | null;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -39,14 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
 
-  // Load token from localStorage or URL on mount
+  // Initialize authentication on mount - check for existing session via cookies
   useEffect(() => {
     const initializeAuth = async () => {
-      // Check for token or error in URL (from Google OAuth redirect)
+      // Check for OAuth error in URL (from Google OAuth redirect)
       const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get('token');
       const oauthError = urlParams.get('error');
       
       if (oauthError) {
@@ -58,23 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      if (urlToken) {
-        // Token from Google OAuth redirect
-        localStorage.setItem('auth_token', urlToken);
-        setToken(urlToken);
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        await refreshUser();
-      } else {
-        // Check for saved token
-        const savedToken = localStorage.getItem('auth_token');
-        if (savedToken) {
-          setToken(savedToken);
-          await refreshUser();
-        } else {
-          setLoading(false);
-        }
-      }
+      // Check for existing session via cookies by calling profile endpoint
+      await refreshUser();
     };
 
     initializeAuth();
@@ -82,29 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      if (!token) {
-        setUser(null);
-        setOrganization(null);
-        return;
-      }
-
-      // Call backend to get user profile
-      const response = await authApi.getProfile();
+      // Call backend to get user profile - cookies are automatically included
+      const response = await api.get<User>('/auth/profile');
 
       if (response.success && response.data) {
         setUser(response.data);
-        setOrganization(response.data.organization);
+        setOrganization(response.data.organization || null);
       } else {
-        // Token is invalid, clear it
-        localStorage.removeItem('auth_token');
-        setToken(null);
+        // No valid session
         setUser(null);
         setOrganization(null);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
-      localStorage.removeItem('auth_token');
-      setToken(null);
+      // Clear user state on error
       setUser(null);
       setOrganization(null);
     } finally {
@@ -114,16 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await authApi.signIn(email, password);
+      const response = await api.post<{
+        user: User;
+        organization?: Organization;
+      }>('/auth/login', { email, password });
 
       if (response.success && response.data) {
-        const authToken = response.data.token;
-        localStorage.setItem('auth_token', authToken);
-        setToken(authToken);
-        
-        // Set user and organization data
+        // Cookies are automatically set by the backend
+        // Update local state with user data
         setUser(response.data.user);
-        setOrganization(response.data.organization);
+        setOrganization(response.data.organization || null);
         
         return { success: true };
       } else {
@@ -136,10 +109,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const response = await authApi.signInWithGoogle();
+      const response = await api.get<{
+        redirectUrl: string;
+      }>('/auth/google');
       
       if (response.success && response.data) {
-        // Redirect to Google OAuth
+        // Redirect to Google OAuth URL provided by backend
         window.location.href = response.data.redirectUrl;
         return { success: true };
       } else {
@@ -152,9 +127,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const response = await authApi.signUp(email, password, name);
+      const response = await api.post<{
+        user: User;
+        organization?: Organization;
+        requiresVerification?: boolean;
+      }>('/auth/register', { email, password, name });
       
       if (response.success) {
+        // If user is automatically logged in (no email verification), update state
+        if (response.data?.user && !response.data?.requiresVerification) {
+          setUser(response.data.user);
+          setOrganization(response.data.organization || null);
+        }
         return { success: true };
       } else {
         return { success: false, error: response.message || 'Registration failed' };
@@ -166,39 +150,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await authApi.signOut();
+      // Call backend logout to clear cookies
+      await api.post('/auth/logout');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Error during logout:', error);
     } finally {
-      localStorage.removeItem('auth_token');
-      setToken(null);
+      // Clear local state regardless of API call success
       setUser(null);
       setOrganization(null);
     }
   };
 
-  // Update API calls to include auth token
-  useEffect(() => {
-    if (token) {
-      // You can set a default header for authenticated requests here
-      // This is handled in the individual API calls for now
-    }
-  }, [token]);
+  const value: AuthContextType = {
+    user,
+    organization,
+    loading,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    refreshUser,
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        organization,
-        loading,
-        token,
-        signIn,
-        signInWithGoogle,
-        signUp,
-        signOut,
-        refreshUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
