@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import {PrismaClient} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -57,7 +57,7 @@ async function main() {
         description: 'Comprehensive review of Q4 2024 performance and strategic planning for Q1 2025',
         status: 'PUBLISHED',
         meetingDate: new Date('2024-12-15T10:00:00Z'),
-        authorId: users[0].id,
+        userId: users[0].id,
         agendaItems: {
           create: [
             {
@@ -100,7 +100,7 @@ async function main() {
         description: 'Strategy and planning for the upcoming product launch',
         status: 'DRAFT',
         meetingDate: new Date('2024-12-20T14:00:00Z'),
-        authorId: users[1].id,
+        userId: users[1].id,
         agendaItems: {
           create: [
             {
@@ -143,7 +143,7 @@ async function main() {
         description: 'Annual budget review and approval for 2025',
         status: 'APPROVED',
         meetingDate: new Date('2024-11-30T09:00:00Z'),
-        authorId: users[2].id,
+        userId: users[2].id,
         agendaItems: {
           create: [
             {
@@ -186,7 +186,7 @@ async function main() {
         description: 'Planning for major technology infrastructure upgrades',
         status: 'DRAFT',
         meetingDate: new Date('2025-01-10T11:00:00Z'),
-        authorId: users[0].id,
+        userId: users[0].id,
         agendaItems: {
           create: [
             {
@@ -229,7 +229,7 @@ async function main() {
         description: 'Review and approval of updated HR policies and procedures',
         status: 'PUBLISHED',
         meetingDate: new Date('2024-12-10T13:00:00Z'),
-        authorId: users[1].id,
+        userId: users[1].id,
         agendaItems: {
           create: [
             {

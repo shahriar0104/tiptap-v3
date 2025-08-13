@@ -225,7 +225,7 @@ curl -X PUT http://localhost:3001/api/board-papers/{id} \
 - `description` (String, Optional)
 - `status` (BoardMeetingStatus Enum)
 - `meetingDate` (DateTime, Optional)
-- `authorId` (String, Foreign Key to User)
+- `userId` (String, Foreign Key to User)
 - `createdAt` (DateTime)
 - `updatedAt` (DateTime)
 

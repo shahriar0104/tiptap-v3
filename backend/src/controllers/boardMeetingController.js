@@ -8,14 +8,30 @@ class BoardMeetingController {
    */
   async createBoardMeeting(req, res, next) {
     try {
-      const { boardMeetingData, agendaItems } = req.body;
-      const authorId = req.user?.id || req.body.authorId || 'default-user-id';
+      // Use validated data from validation middleware
+      const { boardMeetingData, agendaItems } = req.validatedData || req.body;
+      const userId = req.user?.id;
       const organizationId = req.user?.organizationId;
+
+      // Ensure a user is authenticated and has an organization
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
+      if (!organizationId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must belong to an organization to create board meetings',
+        });
+      }
       
       const boardMeeting = await boardMeetingService.createBoardMeetingWithAgendaItems(
         boardMeetingData,
         agendaItems,
-        authorId,
+        userId,
         organizationId
       );
 
@@ -91,11 +107,11 @@ class BoardMeetingController {
    */
   async getAllBoardMeetings(req, res) {
     try {
-      const { status, authorId, limit, offset } = req.query;
+      const { status, userId, limit, offset } = req.query;
       
       const filters = {
         status: status || undefined,
-        authorId: authorId || undefined,
+        userId: userId || undefined,
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0,
       };

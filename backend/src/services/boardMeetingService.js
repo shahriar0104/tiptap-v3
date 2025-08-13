@@ -1,5 +1,5 @@
 import database from '../config/database.js';
-import { Prisma } from '@prisma/client';
+import {Prisma} from '@prisma/client';
 
 class BoardMeetingService {
   constructor() {
@@ -19,17 +19,17 @@ class BoardMeetingService {
    * Create a new board meeting with agenda items using a transaction
    * @param {Object} boardMeetingData - Board meeting data
    * @param {Array} agendaItems - Array of agenda items
-   * @param {string} authorId - ID of the author
-   * @returns {Object} Created board meeting with agenda items
+   * @param {string} userId - ID of the author
+   * @returns {Object} Created a board meeting with agenda items
    */
-  async createBoardMeetingWithAgendaItems(boardMeetingData, agendaItems, authorId, organizationId) {
+  async createBoardMeetingWithAgendaItems(boardMeetingData, agendaItems, userId, organizationId) {
     try {
       const result = await database.transaction(async (tx) => {
         // Create the board meeting
         const boardMeeting = await tx.boardMeeting.create({
           data: {
             ...boardMeetingData,
-            authorId,
+            userId: userId, // Use userId to match Prisma schema
             organizationId,
             meetingDate: boardMeetingData.meetingDate ? new Date(boardMeetingData.meetingDate) : null,
           },
@@ -137,11 +137,11 @@ class BoardMeetingService {
    */
   async getAllBoardMeetings(filters = {}) {
     try {
-      const { status, authorId, limit = 50, offset = 0 } = filters;
+      const { status, userId, limit = 50, offset = 0 } = filters;
 
       const where = {};
       if (status) where.status = status;
-      if (authorId) where.authorId = authorId;
+      if (userId) where.userId = userId;
       
       const boardMeetings = await this.prisma.boardMeeting.findMany({
         where,

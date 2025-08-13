@@ -125,7 +125,7 @@ export const authenticateWithCookies = async (req, res, next) => {
 
     let user = null;
 
-    // Try to verify access token first
+    // Try to verify the access token first
     if (accessToken) {
       try {
         const { supabaseUser, dbUser } = await verifyAccessToken(accessToken);
@@ -157,7 +157,7 @@ export const authenticateWithCookies = async (req, res, next) => {
         // Set new cookies with refreshed tokens
         setAuthCookies(res, refreshResult.accessToken, refreshResult.refreshToken);
         
-        // Get complete user data for refresh result too
+        // Get complete user data for a refresh result too
         const { supabaseUser, dbUser } = await verifyAccessToken(refreshResult.accessToken);
         
         // Set consistent req.user structure

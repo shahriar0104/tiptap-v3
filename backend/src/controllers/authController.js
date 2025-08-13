@@ -25,10 +25,18 @@ class AuthController {
       }
 
       // Authenticate with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      let authData, authError;
+      try {
+        const result = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        authData = result.data;
+        authError = result.error;
+      } catch (networkError) {
+        console.error('Network error connecting to Supabase:', networkError);
+        throw new ApiError('Authentication service temporarily unavailable. Please try again later.', 503);
+      }
 
       if (authError || !authData.user || !authData.session) {
         throw new ApiError('Invalid email or password', 401);

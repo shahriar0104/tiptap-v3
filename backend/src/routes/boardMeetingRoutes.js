@@ -111,7 +111,7 @@ router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.cre
  *           enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
  *         description: Filter by status
  *       - in: query
- *         name: authorId
+ *         name: userId
  *         schema:
  *           type: string
  *         description: Filter by author ID
