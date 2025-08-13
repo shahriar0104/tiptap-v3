@@ -11,6 +11,7 @@ import {config} from './config/app.js';
 import database from './config/database.js';
 import {errorHandler, notFoundHandler} from './middleware/errorHandler.js';
 import corsMiddleware, {corsErrorHandler} from './middleware/cors.js';
+import secureByDefault from './middleware/secureByDefault.js';
 import boardMeetingRoutes from './routes/boardMeetingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
@@ -163,6 +164,11 @@ const startServer = async () => {
     // Connect to database FIRST
     console.log('🚀 Starting server...');
     await database.connect();
+    
+    // Apply secure-by-default middleware to all API routes
+    console.log('Applying secure-by-default authentication...');
+    app.use('/api', secureByDefault);
+    console.log('✅ Secure-by-default middleware applied');
     
     // Mount routes
     console.log('Mounting routes...');

@@ -1,7 +1,7 @@
 import express from 'express';
 import boardMeetingController from '../controllers/boardMeetingController.js';
-import { validateBoardMeeting, validateUpdateBoardMeeting, validateAgendaItem, validateId } from '../middleware/validation.js';
-import { authenticateUser, requireEditor } from '../middleware/auth.js';
+import {validateBoardMeeting, validateUpdateBoardMeeting} from '../middleware/validation.js';
+import {requireEditor} from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -155,6 +155,7 @@ router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.cre
  *       500:
  *         description: Internal server error
  */
+// All routes are now authenticated by default via secureByDefault middleware
 router.get('/', boardMeetingController.getAllBoardMeetings);
 
 /**
@@ -209,18 +210,7 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
- *               meetingDate:
- *                 type: string
- *                 format: date-time
+ *             $ref: '#/components/schemas/BoardMeeting'
  *     responses:
  *       200:
  *         description: Board meeting updated successfully
@@ -237,6 +227,8 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Board meeting not found
  *       500:
@@ -250,6 +242,8 @@ router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoar
  *   delete:
  *     summary: Delete a board meeting
  *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -269,6 +263,8 @@ router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoar
  *                   type: boolean
  *                 message:
  *                   type: string
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Board meeting not found
  *       500:
