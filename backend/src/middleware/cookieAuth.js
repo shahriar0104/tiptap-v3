@@ -1,5 +1,6 @@
 import supabase from '../config/supabase.js';
-import { ApiError } from './errorHandler.js';
+import {ApiError} from './errorHandler.js';
+import database from '../config/database.js';
 
 /**
  * Cookie configuration for secure authentication
@@ -72,7 +73,7 @@ export const refreshAccessToken = async (refreshToken) => {
 };
 
 /**
- * Verify access token with Supabase
+ * Verify access token with Supabase and get complete user data from database
  */
 export const verifyAccessToken = async (accessToken) => {
   try {
@@ -82,7 +83,28 @@ export const verifyAccessToken = async (accessToken) => {
       throw new ApiError('Invalid access token', 401);
     }
 
-    return data.user;
+    // Get complete user data from database including organization
+    const dbUser = await database.prisma.user.findUnique({
+      where: { id: data.user.id },
+      include: { organization: true },
+    });
+
+    if (!dbUser) {
+      // Auto-create user if missing in database (handles edge cases)
+      const newUser = await database.prisma.user.create({
+        data: {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+          avatar: data.user.user_metadata?.avatar_url,
+          role: 'MEMBER',
+        },
+        include: { organization: true },
+      });
+      return { supabaseUser: data.user, dbUser: newUser };
+    }
+
+    return { supabaseUser: data.user, dbUser };
   } catch (error) {
     throw new ApiError('Token verification failed', 401);
   }
@@ -90,7 +112,7 @@ export const verifyAccessToken = async (accessToken) => {
 
 /**
  * Authentication middleware for protected routes
- * Automatically refreshes tokens if access token is expired
+ * Automatically refreshes tokens if the access token is expired
  */
 export const authenticateWithCookies = async (req, res, next) => {
   try {
@@ -106,8 +128,20 @@ export const authenticateWithCookies = async (req, res, next) => {
     // Try to verify access token first
     if (accessToken) {
       try {
-        user = await verifyAccessToken(accessToken);
-        req.user = { userId: user.id, email: user.email };
+        const { supabaseUser, dbUser } = await verifyAccessToken(accessToken);
+        
+        // Set consistent req.user structure with complete user data
+        req.user = {
+          id: dbUser.id,
+          userId: dbUser.id, // For backward compatibility
+          email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar,
+          role: dbUser.role,
+          organizationId: dbUser.organizationId,
+          organization: dbUser.organization,
+        };
+        
         return next();
       } catch (error) {
         // Access token is invalid/expired, try refresh
@@ -123,9 +157,19 @@ export const authenticateWithCookies = async (req, res, next) => {
         // Set new cookies with refreshed tokens
         setAuthCookies(res, refreshResult.accessToken, refreshResult.refreshToken);
         
-        req.user = { 
-          userId: refreshResult.user.id, 
-          email: refreshResult.user.email 
+        // Get complete user data for refresh result too
+        const { supabaseUser, dbUser } = await verifyAccessToken(refreshResult.accessToken);
+        
+        // Set consistent req.user structure
+        req.user = {
+          id: dbUser.id,
+          userId: dbUser.id, // For backward compatibility
+          email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar,
+          role: dbUser.role,
+          organizationId: dbUser.organizationId,
+          organization: dbUser.organization,
         };
         
         console.log('Token refreshed successfully');

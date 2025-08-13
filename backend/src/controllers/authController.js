@@ -233,7 +233,7 @@ class AuthController {
   createOrganization = async (req, res, next) => {
     try {
       const { organizationName, domain, description } = req.body;
-      const userId = req.user.userId; // From cookie middleware
+      const userId = req.user.id; // From cookie middleware
 
       if (!organizationName) {
         throw new ApiError('Organization name is required', 400);
@@ -288,7 +288,7 @@ class AuthController {
   joinOrganization = async (req, res, next) => {
     try {
       const { organizationSlug } = req.body;
-      const userId = req.user.userId; // From cookie middleware
+      const userId = req.user.id; // From cookie middleware
 
       if (!organizationSlug) {
         throw new ApiError('Organization slug is required', 400);
@@ -538,7 +538,7 @@ class AuthController {
   async getProfile(req, res, next) {
     try {
       const user = await database.prisma.user.findUnique({
-        where: { id: req.user.userId },
+        where: { id: req.user.id },
         include: {
           organization: {
             include: {

@@ -1,7 +1,6 @@
 import express from 'express';
 import authController from '../controllers/authController.js';
-import {authenticateWithCookies} from '../middleware/cookieAuth.js';
-import {authenticateUser, requireAdmin} from "../middleware/auth.js";
+import {requireAdmin} from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -114,7 +113,7 @@ router.post('/logout', authController.logout);
  *       401:
  *         description: Authentication required
  */
-router.get('/profile', authenticateWithCookies, authController.getProfile);
+router.get('/profile', authController.getProfile);
 
 /**
  * @swagger
@@ -145,7 +144,7 @@ router.get('/profile', authenticateWithCookies, authController.getProfile);
  *       409:
  *         description: User already belongs to an organization
  */
-router.post('/create-organization', authenticateWithCookies, authController.createOrganization);
+router.post('/create-organization', authController.createOrganization);
 
 /**
  * @swagger
@@ -174,7 +173,7 @@ router.post('/create-organization', authenticateWithCookies, authController.crea
  *       409:
  *         description: User already belongs to an organization
  */
-router.post('/join-organization', authenticateWithCookies, authController.joinOrganization);
+router.post('/join-organization', authController.joinOrganization);
 
 /**
  * @swagger
@@ -282,25 +281,6 @@ router.post('/callback', authController.handleAuthCallback);
  */
 router.post('/join-organization', authController.joinOrganization);
 
-// Protected routes (require authentication)
-router.use(authenticateUser);
-
-/**
- * @swagger
- * /api/auth/profile:
- *   get:
- *     summary: Get current user profile
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: User profile retrieved successfully
- *       401:
- *         description: Unauthorized
- */
-router.get('/profile', authController.getProfile);
-
 /**
  * @swagger
  * /api/auth/profile:
@@ -308,7 +288,7 @@ router.get('/profile', authController.getProfile);
  *     summary: Update user profile
  *     tags: [Authentication]
  *     security:
- *       - BearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -335,7 +315,7 @@ router.put('/profile', authController.updateProfile);
  *     summary: Get organization members (admin only)
  *     tags: [Authentication]
  *     security:
- *       - BearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Organization members retrieved successfully
