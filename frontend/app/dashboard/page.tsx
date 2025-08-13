@@ -1,24 +1,16 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 import CardButton from "@/components/ui-helper/CardButton";
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  MdAdd, 
-  MdHistory, 
-  MdLink, 
-  MdPictureAsPdf, 
-  MdFolder 
-} from "react-icons/md";
+import {useAuth} from '@/contexts/AuthContext';
+import {MdAdd, MdFolder, MdHistory, MdLink, MdPictureAsPdf} from "react-icons/md";
 
 export default function Dashboard() {
   const { user, organization } = useAuth();
 
   return (
-    <ProtectedRoute>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <motion.h1 
@@ -101,6 +93,5 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
-    </ProtectedRoute>
   );
 }

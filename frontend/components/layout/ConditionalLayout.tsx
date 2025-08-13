@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePathname } from 'next/navigation';
+import {useAuth} from '@/contexts/AuthContext';
+import {usePathname, useRouter} from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
 
 interface ConditionalLayoutProps {
@@ -12,8 +12,8 @@ interface ConditionalLayoutProps {
 export default function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
-
-  // Define public routes that should not show sidebar
+  const router = useRouter();
+  // Define public routes that should not show sidebar and don't require authentication
   const publicRoutes = [
     '/',           // Landing page
     '/auth/login',
@@ -21,11 +21,27 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
     '/auth/setup',
   ];
 
-  // Check if current route is public
+  // Check if the current route is public
   const isPublicRoute = publicRoutes.includes(pathname);
 
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Centralized authentication guard for protected routes
+  // Redirect and return null immediately to prevent flash of content
+  if (!isPublicRoute && !user) {
+    router.push('/auth/login');
+    return null;
+  }
+
   // Show sidebar only for authenticated users with organization on non-public routes
-  const showSidebar = !loading && user && user.organizationId && !isPublicRoute;
+  const showSidebar = user && user.organizationId && !isPublicRoute;
 
   if (showSidebar) {
     // Authenticated layout with sidebar
@@ -42,7 +58,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
     );
   }
 
-  // Public layout without sidebar
+  // Public layout without a sidebar
   return (
     <div className="min-h-screen">
       <main className="w-full">

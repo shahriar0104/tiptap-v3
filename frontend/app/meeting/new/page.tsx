@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
 import DatePicker from "@/components/ui-helper/DatePicker";
 
 export default function NewMeetingPage() {
@@ -45,18 +45,18 @@ export default function NewMeetingPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Create New Board Meeting
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Set up a new board meeting with essential details.
-        </p>
-      </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Create New Board Meeting
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Set up a new board meeting with essential details.
+          </p>
+        </div>
 
-      {/* Form Card */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
+        {/* Form Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Message */}
           {error && (
@@ -145,6 +145,6 @@ export default function NewMeetingPage() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
   );
 }

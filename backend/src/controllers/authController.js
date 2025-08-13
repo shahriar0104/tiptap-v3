@@ -3,7 +3,6 @@ import organizationService from '../services/organizationService.js';
 import database from '../config/database.js';
 import {ApiError} from '../middleware/errorHandler.js';
 import {clearAuthCookies, setAuthCookies} from '../middleware/cookieAuth.js';
-import jwt from 'jsonwebtoken';
 
 class AuthController {
   constructor() {
@@ -12,23 +11,6 @@ class AuthController {
     this.googleAuth = this.googleAuth.bind(this);
     this.googleCallback = this.googleCallback.bind(this);
     this.createOrganization = this.createOrganization.bind(this);
-  }
-
-  /**
-   * Generate JWT token for user
-   */
-  generateToken(user) {
-    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is missing');
-    return jwt.sign(
-      {
-        sub: user.id,
-        email: user.email,
-        organizationId: user.organizationId,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
   }
 
   /**
@@ -213,25 +195,31 @@ class AuthController {
       });
 
       if (!user) {
-        // New user - redirect to organization setup with a temporary token
-        const tempToken = this.generateToken({
-          id: 'temp',
-          email: supabaseUser.email,
-          organizationId: null,
-          role: 'MEMBER',
+        // New user - create user record in database
+        user = await database.prisma.user.create({
+          data: {
+            id: supabaseUser.id,
+            email: supabaseUser.email,
+            name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0],
+            avatar: supabaseUser.user_metadata?.avatar_url,
+            role: 'MEMBER',
+          },
+          include: { organization: true },
         });
 
+        // Set cookies and redirect to organization setup
+        setAuthCookies(res, session.access_token, session.refresh_token);
         return res.redirect(
-          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/setup?token=${tempToken}&email=${encodeURIComponent(supabaseUser.email)}&name=${encodeURIComponent(supabaseUser.user_metadata?.full_name || '')}`
+          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/setup?email=${encodeURIComponent(supabaseUser.email)}&name=${encodeURIComponent(supabaseUser.user_metadata?.full_name || '')}`
         );
       }
 
-      // Existing user - generate token and redirect to dashboard
-      const token = this.generateToken(user);
+      // Existing user - set cookies and redirect to dashboard
+      setAuthCookies(res, session.access_token, session.refresh_token);
       
-      // Redirect to frontend with token
+      // Redirect to frontend dashboard
       res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3000'}?token=${token}`
+        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard`
       );
     } catch (error) {
       console.error('Google OAuth callback error:', error);
@@ -245,7 +233,7 @@ class AuthController {
   createOrganization = async (req, res, next) => {
     try {
       const { organizationName, domain, description } = req.body;
-      const userId = req.user.userId; // From JWT middleware
+      const userId = req.user.userId; // From cookie middleware
 
       if (!organizationName) {
         throw new ApiError('Organization name is required', 400);
@@ -278,14 +266,13 @@ class AuthController {
         },
       });
 
-      // Generate new JWT token with organization info
-      const token = this.generateToken(result.user);
+      // Cookies remain valid - no need to regenerate tokens
+      // Organization info will be fetched fresh on next authenticated request
 
       res.status(201).json({
         success: true,
         message: 'Organization created successfully',
         data: {
-          token,
           organization: result.organization,
           user: result.user,
         },
@@ -301,7 +288,7 @@ class AuthController {
   joinOrganization = async (req, res, next) => {
     try {
       const { organizationSlug } = req.body;
-      const userId = req.user.userId; // From JWT middleware
+      const userId = req.user.userId; // From cookie middleware
 
       if (!organizationSlug) {
         throw new ApiError('Organization slug is required', 400);
@@ -336,14 +323,13 @@ class AuthController {
         include: { organization: true },
       });
 
-      // Generate new JWT token with organization info
-      const token = this.generateToken(updatedUser);
+      // Cookies remain valid - no need to regenerate tokens
+      // Organization info will be fetched fresh on next authenticated request
 
       res.json({
         success: true,
         message: 'Successfully joined organization',
         data: {
-          token,
           organization: updatedUser.organization,
           user: updatedUser,
         },
@@ -462,16 +448,19 @@ class AuthController {
         },
       });
 
-      // Generate JWT token for the new admin user
-      const token = this.generateToken(result.user);
+      // Set secure HTTP-only cookies for the new admin user
+      // Note: authData.session will be null for unconfirmed users
+      if (authData.session) {
+        setAuthCookies(res, authData.session.access_token, authData.session.refresh_token);
+      }
 
       res.status(201).json({
         success: true,
         message: 'Organization created successfully. Please check your email to verify your account.',
         data: {
-          token,
           organization: result.organization,
           user: result.user,
+          requiresEmailVerification: !authData.session, // true if email verification needed
         },
       });
     } catch (error) {
