@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const container_1 = require("../container");
+const middlewares_1 = require("../middlewares");
+const boardMeeting_1 = require("../validators/boardMeeting");
+const router = (0, express_1.Router)();
+const { boardMeetingController, authMiddleware } = container_1.container;
+router.post('/organization', boardMeetingController.createOrganizationWithBoardMeeting);
+router.use(authMiddleware.authenticate);
+router.use(authMiddleware.requireOrganization);
+router.post('/', (0, middlewares_1.validateRequest)(boardMeeting_1.createBoardMeetingSchema), boardMeetingController.createBoardMeeting);
+router.get('/', (0, middlewares_1.validateRequest)(boardMeeting_1.getBoardMeetingsSchema), boardMeetingController.getBoardMeetings);
+router.get('/organization', boardMeetingController.getOrganizationMeetings);
+router.get('/:id', (0, middlewares_1.validateRequest)(boardMeeting_1.getBoardMeetingSchema), boardMeetingController.getBoardMeeting);
+router.put('/:id', (0, middlewares_1.validateRequest)(boardMeeting_1.updateBoardMeetingSchema), boardMeetingController.updateBoardMeeting);
+router.delete('/:id', (0, middlewares_1.validateRequest)(boardMeeting_1.getBoardMeetingSchema), boardMeetingController.deleteBoardMeeting);
+router.patch('/:id/status', (0, middlewares_1.validateRequest)(boardMeeting_1.getBoardMeetingSchema), boardMeetingController.updateMeetingStatus);
+exports.default = router;
+//# sourceMappingURL=boardMeetingRoutes.js.map

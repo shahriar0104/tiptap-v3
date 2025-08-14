@@ -1,0 +1,26 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const container_1 = require("../container");
+const middlewares_1 = require("../middlewares");
+const agenda_1 = require("../validators/agenda");
+const router = (0, express_1.Router)();
+const { agendaGroupController, agendaItemController, authMiddleware } = container_1.container;
+router.use(authMiddleware.authenticate);
+router.use(authMiddleware.requireOrganization);
+router.post('/groups', (0, middlewares_1.validateRequest)(agenda_1.createAgendaGroupSchema), agendaGroupController.createAgendaGroup);
+router.get('/groups/:id', (0, middlewares_1.validateRequest)(agenda_1.getAgendaGroupSchema), agendaGroupController.getAgendaGroup);
+router.put('/groups/:id', (0, middlewares_1.validateRequest)(agenda_1.updateAgendaGroupSchema), agendaGroupController.updateAgendaGroup);
+router.delete('/groups/:id', (0, middlewares_1.validateRequest)(agenda_1.getAgendaGroupSchema), agendaGroupController.deleteAgendaGroup);
+router.get('/board-meetings/:boardMeetingId/groups', agendaGroupController.getAgendaGroupsByBoardMeeting);
+router.post('/board-meetings/:boardMeetingId/groups/reorder', agendaGroupController.reorderAgendaGroups);
+router.post('/items', (0, middlewares_1.validateRequest)(agenda_1.createAgendaItemSchema), agendaItemController.createAgendaItem);
+router.get('/items/:id', (0, middlewares_1.validateRequest)(agenda_1.getAgendaItemSchema), agendaItemController.getAgendaItem);
+router.put('/items/:id', (0, middlewares_1.validateRequest)(agenda_1.updateAgendaItemSchema), agendaItemController.updateAgendaItem);
+router.delete('/items/:id', (0, middlewares_1.validateRequest)(agenda_1.getAgendaItemSchema), agendaItemController.deleteAgendaItem);
+router.patch('/items/:id/status', (0, middlewares_1.validateRequest)(agenda_1.getAgendaItemSchema), agendaItemController.updateAgendaItemStatus);
+router.get('/groups/:agendaGroupId/items', agendaItemController.getAgendaItemsByGroup);
+router.get('/board-meetings/:boardMeetingId/items', agendaItemController.getAgendaItemsByBoardMeeting);
+router.post('/groups/:agendaGroupId/items/reorder', agendaItemController.reorderAgendaItems);
+exports.default = router;
+//# sourceMappingURL=agendaRoutes.js.map
