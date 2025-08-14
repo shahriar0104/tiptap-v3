@@ -1,24 +1,25 @@
-import {z} from 'zod';
-import {config} from '../config/app.js';
+import { z } from 'zod';
+import { Request, Response, NextFunction } from 'express';
+import { config } from '../config/app.js';
+import { BoardMeetingStatus, AgendaItemStatus } from '@prisma/client';
+
+// Extend Request interface to include validatedData
+interface ValidatedRequest extends Request {
+  validatedData?: unknown;
+}
 
 // Base validation schemas
 export const agendaItemSchema = z.object({
   title: z.string()
     .min(1, 'Title is required')
     .max(config.validation.maxTitleLength, `Title must be less than ${config.validation.maxTitleLength} characters`),
-  description: z.string()
-    .max(config.validation.maxDescriptionLength, `Description must be less than ${config.validation.maxDescriptionLength} characters`)
-    .optional(),
   order: z.number()
     .int('Order must be an integer')
-    .min(1, 'Order must be at least 1'),
-  duration: z.number()
-    .int('Duration must be an integer')
-    .min(1, 'Duration must be at least 1 minute')
-    .max(480, 'Duration cannot exceed 8 hours (480 minutes)')
-    .optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DEFERRED'])
-    .default('PENDING')
+    .min(0, 'Order must be at least 0'),
+  startTime: z.string()
+    .min(1, 'Start time is required'),
+  status: z.nativeEnum(AgendaItemStatus)
+    .default(AgendaItemStatus.PENDING)
     .optional(),
 });
 
@@ -29,8 +30,8 @@ export const boardMeetingSchema = z.object({
   description: z.string()
     .max(config.validation.maxDescriptionLength, `Description must be less than ${config.validation.maxDescriptionLength} characters`)
     .optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'APPROVED', 'REJECTED'])
-    .default('DRAFT')
+  status: z.nativeEnum(BoardMeetingStatus)
+    .default(BoardMeetingStatus.DRAFT)
     .optional(),
   meetingDate: z.string()
     .datetime('Meeting date must be a valid ISO datetime')
@@ -51,8 +52,8 @@ export const createBoardMeetingSchema = z.object({
   description: z.string()
     .max(config.validation.maxDescriptionLength, `Description must be less than ${config.validation.maxDescriptionLength} characters`)
     .optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'APPROVED', 'REJECTED'])
-    .default('DRAFT')
+  status: z.nativeEnum(BoardMeetingStatus)
+    .default(BoardMeetingStatus.DRAFT)
     .optional(),
   meetingDate: z.string()
     .datetime('Meeting date must be a valid ISO datetime')
@@ -71,7 +72,7 @@ export const updateBoardMeetingSchema = z.object({
   description: z.string()
     .max(config.validation.maxDescriptionLength, `Description must be less than ${config.validation.maxDescriptionLength} characters`)
     .optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'APPROVED', 'REJECTED'])
+  status: z.nativeEnum(BoardMeetingStatus)
     .optional(),
   meetingDate: z.string()
     .datetime('Meeting date must be a valid ISO datetime')
@@ -84,19 +85,14 @@ export const updateAgendaItemSchema = z.object({
     .min(1, 'Title is required')
     .max(config.validation.maxTitleLength, `Title must be less than ${config.validation.maxTitleLength} characters`)
     .optional(),
-  description: z.string()
-    .max(config.validation.maxDescriptionLength, `Description must be less than ${config.validation.maxDescriptionLength} characters`)
-    .optional(),
   order: z.number()
     .int('Order must be an integer')
-    .min(1, 'Order must be at least 1')
+    .min(0, 'Order must be at least 0')
     .optional(),
-  duration: z.number()
-    .int('Duration must be an integer')
-    .min(1, 'Duration must be at least 1 minute')
-    .max(480, 'Duration cannot exceed 8 hours (480 minutes)')
+  startTime: z.string()
+    .min(1, 'Start time is required')
     .optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DEFERRED'])
+  status: z.nativeEnum(AgendaItemStatus)
     .optional(),
 });
 
@@ -104,15 +100,15 @@ export const updateAgendaItemSchema = z.object({
 export const idSchema = z.object({
   id: z.string()
     .min(1, 'ID is required')
-    .regex(/^[a-zA-Z0-9]+$/, 'ID must contain only alphanumeric characters'),
+    .regex(/^c[a-z0-9]{24}$/, 'ID must be a valid CUID'),
 });
 
 // Validation middleware factory
-export const createValidationMiddleware = (schema) => {
-  return (req, res, next) => {
+export const createValidationMiddleware = (schema: z.ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const validatedData = schema.parse(req.body);
-      req.validatedData = validatedData;
+      (req as ValidatedRequest).validatedData = validatedData;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -121,14 +117,15 @@ export const createValidationMiddleware = (schema) => {
           message: err.message,
         }));
         
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Validation failed',
           errors,
         });
+        return;
       }
       
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Internal validation error',
       });
@@ -140,4 +137,3 @@ export const createValidationMiddleware = (schema) => {
 export const validateCreateBoardMeeting = createValidationMiddleware(createBoardMeetingSchema);
 export const validateUpdateBoardMeeting = createValidationMiddleware(updateBoardMeetingSchema);
 export const validateUpdateAgendaItem = createValidationMiddleware(updateAgendaItemSchema);
-export const validateId = createValidationMiddleware(idSchema); 

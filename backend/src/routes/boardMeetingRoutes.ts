@@ -1,7 +1,7 @@
 import express from 'express';
 import boardMeetingController from '../controllers/boardMeetingController.js';
-import {validateBoardMeeting, validateUpdateBoardMeeting} from '../middleware/validation.js';
-import {requireEditor} from '../middleware/auth.js';
+import { validateBoardMeeting, validateUpdateBoardMeeting, validateId } from '../middleware/validation.js';
+import { requireEditor } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ const router = express.Router();
  *           description: Description of the board meeting
  *         status:
  *           type: string
- *           enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
+ *           enum: [DRAFT, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED]
  *           default: DRAFT
  *         meetingDate:
  *           type: string
@@ -38,22 +38,18 @@ const router = express.Router();
  *       required:
  *         - title
  *         - order
+ *         - startTime
  *       properties:
  *         title:
  *           type: string
  *           description: Title of the agenda item
- *         description:
- *           type: string
- *           description: Description of the agenda item
  *         order:
  *           type: integer
- *           minimum: 1
+ *           minimum: 0
  *           description: Order of the agenda item
- *         duration:
- *           type: integer
- *           minimum: 1
- *           maximum: 480
- *           description: Duration in minutes
+ *         startTime:
+ *           type: string
+ *           description: Start time of the agenda item
  *         status:
  *           type: string
  *           enum: [PENDING, IN_PROGRESS, COMPLETED, DEFERRED]
@@ -67,7 +63,7 @@ const router = express.Router();
  *     summary: Create a new board meeting with agenda items
  *     tags: [Board Meetings]
  *     security:
- *       - BearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -101,32 +97,10 @@ router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.cre
  * @swagger
  * /api/board-meetings:
  *   get:
- *     summary: Get all board meetings with optional filtering
+ *     summary: Get all board meetings for user's organization
  *     tags: [Board Meetings]
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
- *         description: Filter by status
- *       - in: query
- *         name: userId
- *         schema:
- *           type: string
- *         description: Filter by author ID
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *         description: Number of items to return
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *         description: Number of items to skip
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Board meetings retrieved successfully
@@ -143,19 +117,9 @@ router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.cre
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/BoardMeeting'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     limit:
- *                       type: integer
- *                     offset:
- *                       type: integer
- *                     total:
- *                       type: integer
  *       500:
  *         description: Internal server error
  */
-// All routes are now authenticated by default via secureByDefault middleware
 router.get('/', boardMeetingController.getAllBoardMeetings);
 
 /**
@@ -164,6 +128,8 @@ router.get('/', boardMeetingController.getAllBoardMeetings);
  *   get:
  *     summary: Get a board meeting by ID
  *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -190,7 +156,7 @@ router.get('/', boardMeetingController.getAllBoardMeetings);
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', boardMeetingController.getBoardMeeting);
+router.get('/:id', validateId, boardMeetingController.getBoardMeeting);
 
 /**
  * @swagger
@@ -198,6 +164,8 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *   put:
  *     summary: Update a board meeting
  *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -210,31 +178,31 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BoardMeeting'
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED]
+ *               meetingDate:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       200:
  *         description: Board meeting updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
- *       401:
- *         description: Authentication required
  *       404:
  *         description: Board meeting not found
+ *       403:
+ *         description: Permission denied
  *       500:
  *         description: Internal server error
  */
-router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoardMeeting);
+router.put('/:id', validateId, validateUpdateBoardMeeting, boardMeetingController.updateBoardMeeting);
 
 /**
  * @swagger
@@ -254,30 +222,23 @@ router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoar
  *     responses:
  *       200:
  *         description: Board meeting deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *       401:
- *         description: Authentication required
  *       404:
  *         description: Board meeting not found
+ *       403:
+ *         description: Permission denied
  *       500:
  *         description: Internal server error
  */
-router.delete('/:id', boardMeetingController.deleteBoardMeeting);
+router.delete('/:id', validateId, boardMeetingController.deleteBoardMeeting);
 
 /**
  * @swagger
  * /api/board-meetings/{id}/agenda-items:
  *   post:
- *     summary: Add agenda items to an existing board meeting
+ *     summary: Add agenda items to a board meeting
  *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -297,25 +258,101 @@ router.delete('/:id', boardMeetingController.deleteBoardMeeting);
  *                 items:
  *                   $ref: '#/components/schemas/AgendaItem'
  *     responses:
- *       200:
+ *       201:
  *         description: Agenda items added successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
  *       404:
  *         description: Board meeting not found
+ *       403:
+ *         description: Permission denied
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/agenda-items', boardMeetingController.addAgendaItems);
+router.post('/:id/agenda-items', validateId, boardMeetingController.addAgendaItems);
 
-export default router; 
+/**
+ * @swagger
+ * /api/board-meetings/{boardMeetingId}/agenda-items/{agendaItemId}:
+ *   put:
+ *     summary: Update an agenda item
+ *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: boardMeetingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Board meeting ID
+ *       - in: path
+ *         name: agendaItemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Agenda item ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               order:
+ *                 type: integer
+ *               startTime:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING, IN_PROGRESS, COMPLETED, DEFERRED]
+ *     responses:
+ *       200:
+ *         description: Agenda item updated successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Board meeting or agenda item not found
+ *       403:
+ *         description: Permission denied
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:boardMeetingId/agenda-items/:agendaItemId', boardMeetingController.updateAgendaItem);
+
+/**
+ * @swagger
+ * /api/board-meetings/{boardMeetingId}/agenda-items/{agendaItemId}:
+ *   delete:
+ *     summary: Delete an agenda item
+ *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: boardMeetingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Board meeting ID
+ *       - in: path
+ *         name: agendaItemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Agenda item ID
+ *     responses:
+ *       200:
+ *         description: Agenda item deleted successfully
+ *       404:
+ *         description: Board meeting or agenda item not found
+ *       403:
+ *         description: Permission denied
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/:boardMeetingId/agenda-items/:agendaItemId', boardMeetingController.deleteAgendaItem);
+
+export default router;

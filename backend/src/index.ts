@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction, Application } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
@@ -6,26 +6,27 @@ import rateLimit from 'express-rate-limit';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import cookieParser from 'cookie-parser';
+import { Server } from 'http';
 
-import {config} from './config/app.js';
+import { config } from './config/app.js';
 import database from './config/database.js';
-import {errorHandler, notFoundHandler} from './middleware/errorHandler.js';
-import corsMiddleware, {corsErrorHandler} from './middleware/cors.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import corsMiddleware, { corsErrorHandler } from './middleware/cors.js';
 import secureByDefault from './middleware/secureByDefault.js';
 import boardMeetingRoutes from './routes/boardMeetingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 // Initialize Express app
-const app = express();
+const app: Application = express();
 
 // Swagger configuration
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Board Papers API',
+      title: 'Board Meeting API',
       version: '1.0.0',
-      description: 'A production-ready Express.js API for managing board papers and agenda items',
+      description: 'A production-ready Express.js API for managing board meetings and agenda items',
       contact: {
         name: 'API Support',
         email: 'support@example.com',
@@ -39,15 +40,15 @@ const swaggerOptions = {
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
+        cookieAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'sb-access-token',
         },
       },
     },
   },
-  apis: ['./src/routes/*.js'], // Path to the API routes
+  apis: ['./src/routes/*.ts', './src/routes/*.js'], // Path to the API routes
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -98,13 +99,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'Server is healthy',
@@ -118,10 +119,10 @@ app.get('/health', (req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Board Papers API',
+    message: 'Board Meeting API',
     version: '1.0.0',
     documentation: '/api-docs',
     health: '/health',
@@ -131,9 +132,9 @@ app.get('/', (req, res) => {
 // Note: 404 and error handlers are moved to startServer() function after routes are mounted
 
 // Graceful shutdown
-let server;
+let server: Server | undefined;
 
-const gracefulShutdown = async (signal) => {
+const gracefulShutdown = async (signal: string): Promise<void> => {
   console.log(`${signal} received, shutting down gracefully`);
   
   if (server) {
@@ -159,7 +160,7 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Start server
-const startServer = async () => {
+const startServer = async (): Promise<void> => {
   try {
     // Connect to database FIRST
     console.log('🚀 Starting server...');
@@ -191,7 +192,7 @@ const startServer = async () => {
     });
 
     // Handle server errors
-    server.on('error', (error) => {
+    server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.syscall !== 'listen') {
         throw error;
       }
@@ -202,11 +203,9 @@ const startServer = async () => {
         case 'EACCES':
           console.error(bind + ' requires elevated privileges');
           process.exit(1);
-          break;
         case 'EADDRINUSE':
           console.error(bind + ' is already in use');
           process.exit(1);
-          break;
         default:
           throw error;
       }
@@ -223,4 +222,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   startServer();
 }
 
-export default app; 
+export default app;

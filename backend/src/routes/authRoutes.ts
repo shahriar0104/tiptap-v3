@@ -1,6 +1,6 @@
 import express from 'express';
 import authController from '../controllers/authController.js';
-import {requireAdmin} from "../middleware/auth.js";
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -243,43 +243,6 @@ router.post('/register-organization', authController.registerOrganization);
  *         description: Invalid token
  */
 router.post('/callback', authController.handleAuthCallback);
-
-/**
- * @swagger
- * /api/auth/join-organization:
- *   post:
- *     summary: Join an existing organization
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - organizationSlug
- *               - userData
- *             properties:
- *               organizationSlug:
- *                 type: string
- *               userData:
- *                 type: object
- *                 properties:
- *                   email:
- *                     type: string
- *                   name:
- *                     type: string
- *                   avatar:
- *                     type: string
- *     responses:
- *       201:
- *         description: Successfully joined organization
- *       404:
- *         description: Organization not found
- *       409:
- *         description: User already exists
- */
-router.post('/join-organization', authController.joinOrganization);
 
 /**
  * @swagger

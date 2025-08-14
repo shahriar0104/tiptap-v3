@@ -1,24 +1,27 @@
+import { Request, Response, NextFunction, CookieOptions } from 'express';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import supabase from '../config/supabase.js';
-import {ApiError} from './errorHandler.js';
+import { ApiError } from './errorHandler.js';
 import database from '../config/database.js';
+import { AuthenticatedRequest, AuthenticatedUser, UserRole, AuthCookies } from '../types/index.js';
 
 /**
  * Cookie configuration for secure authentication
  */
-export const cookieConfig = {
+export const cookieConfig: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site for production
-  domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+  secure: process.env['NODE_ENV'] === 'production', // HTTPS only in production
+  sameSite: process.env['NODE_ENV'] === 'production' ? 'none' : 'lax', // Cross-site for production
+  domain: process.env['NODE_ENV'] === 'production' ? process.env['COOKIE_DOMAIN'] : undefined,
   path: '/',
 };
 
-export const accessTokenConfig = {
+export const accessTokenConfig: CookieOptions = {
   ...cookieConfig,
   maxAge: 60 * 60 * 1000, // 1 hour
 };
 
-export const refreshTokenConfig = {
+export const refreshTokenConfig: CookieOptions = {
   ...cookieConfig,
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
@@ -26,7 +29,7 @@ export const refreshTokenConfig = {
 /**
  * Set authentication cookies
  */
-export const setAuthCookies = (res, accessToken, refreshToken) => {
+export const setAuthCookies = (res: Response, accessToken: string, refreshToken: string): void => {
   res.cookie('sb-access-token', accessToken, accessTokenConfig);
   res.cookie('sb-refresh-token', refreshToken, refreshTokenConfig);
 };
@@ -34,7 +37,7 @@ export const setAuthCookies = (res, accessToken, refreshToken) => {
 /**
  * Clear authentication cookies
  */
-export const clearAuthCookies = (res) => {
+export const clearAuthCookies = (res: Response): void => {
   res.clearCookie('sb-access-token', cookieConfig);
   res.clearCookie('sb-refresh-token', cookieConfig);
 };
@@ -42,17 +45,21 @@ export const clearAuthCookies = (res) => {
 /**
  * Extract tokens from cookies
  */
-export const getTokensFromCookies = (req) => {
+export const getTokensFromCookies = (req: Request): AuthCookies => {
   return {
-    accessToken: req.cookies['sb-access-token'],
-    refreshToken: req.cookies['sb-refresh-token'],
+    accessToken: req.cookies['sb-access-token'] as string,
+    refreshToken: req.cookies['sb-refresh-token'] as string,
   };
 };
 
 /**
  * Refresh access token using refresh token
  */
-export const refreshAccessToken = async (refreshToken) => {
+export const refreshAccessToken = async (refreshToken: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  user: SupabaseUser;
+}> => {
   try {
     const { data, error } = await supabase.auth.refreshSession({
       refresh_token: refreshToken,
@@ -65,7 +72,7 @@ export const refreshAccessToken = async (refreshToken) => {
     return {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-      user: data.user,
+      user: data.user!,
     };
   } catch (error) {
     throw new ApiError('Failed to refresh token', 401);
@@ -75,7 +82,10 @@ export const refreshAccessToken = async (refreshToken) => {
 /**
  * Verify access token with Supabase and get complete user data from database
  */
-export const verifyAccessToken = async (accessToken) => {
+export const verifyAccessToken = async (accessToken: string): Promise<{
+  supabaseUser: SupabaseUser;
+  dbUser: AuthenticatedUser;
+}> => {
   try {
     const { data, error } = await supabase.auth.getUser(accessToken);
 
@@ -84,27 +94,41 @@ export const verifyAccessToken = async (accessToken) => {
     }
 
     // Get complete user data from database including organization
-    const dbUser = await database.prisma.user.findUnique({
+    const dbUser = await database.getClient().user.findUnique({
       where: { id: data.user.id },
       include: { organization: true },
     });
 
     if (!dbUser) {
       // Auto-create user if missing in database (handles edge cases)
-      const newUser = await database.prisma.user.create({
+      const newUser = await database.getClient().user.create({
         data: {
           id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-          avatar: data.user.user_metadata?.avatar_url,
-          role: 'MEMBER',
+          email: data.user.email!,
+          name: data.user.user_metadata?.['full_name'] || data.user.user_metadata?.['name'] || '',
+          avatar: data.user.user_metadata?.['avatar_url'] || null,
+          role: UserRole.MEMBER,
         },
         include: { organization: true },
       });
-      return { supabaseUser: data.user, dbUser: newUser };
+      const authenticatedUser: AuthenticatedUser = {
+        ...newUser,
+        organization: newUser.organization || undefined,
+      };
+      
+      return { supabaseUser: data.user, dbUser: authenticatedUser };
     }
 
-    return { supabaseUser: data.user, dbUser };
+    if (!dbUser.isActive) {
+      throw new ApiError('User account is inactive', 401);
+    }
+
+    const authenticatedUser: AuthenticatedUser = {
+      ...dbUser,
+      organizationId: dbUser.organizationId || '',
+    };
+
+    return { supabaseUser: data.user, dbUser: authenticatedUser };
   } catch (error) {
     throw new ApiError('Token verification failed', 401);
   }
@@ -114,7 +138,11 @@ export const verifyAccessToken = async (accessToken) => {
  * Authentication middleware for protected routes
  * Automatically refreshes tokens if the access token is expired
  */
-export const authenticateWithCookies = async (req, res, next) => {
+export const authenticateWithCookies = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { accessToken, refreshToken } = getTokensFromCookies(req);
 
@@ -123,23 +151,23 @@ export const authenticateWithCookies = async (req, res, next) => {
       throw new ApiError('Authentication required', 401);
     }
 
-    let user = null;
-
     // Try to verify the access token first
     if (accessToken) {
       try {
         const { supabaseUser, dbUser } = await verifyAccessToken(accessToken);
         
         // Set consistent req.user structure with complete user data
-        req.user = {
+        (req as AuthenticatedRequest).user = {
           id: dbUser.id,
-          userId: dbUser.id, // For backward compatibility
           email: dbUser.email,
           name: dbUser.name,
           avatar: dbUser.avatar,
           role: dbUser.role,
+          isActive: dbUser.isActive,
           organizationId: dbUser.organizationId,
           organization: dbUser.organization,
+          createdAt: dbUser.createdAt,
+          updatedAt: dbUser.updatedAt,
         };
         
         return next();
@@ -161,15 +189,17 @@ export const authenticateWithCookies = async (req, res, next) => {
         const { supabaseUser, dbUser } = await verifyAccessToken(refreshResult.accessToken);
         
         // Set consistent req.user structure
-        req.user = {
+        (req as AuthenticatedRequest).user = {
           id: dbUser.id,
-          userId: dbUser.id, // For backward compatibility
           email: dbUser.email,
           name: dbUser.name,
           avatar: dbUser.avatar,
           role: dbUser.role,
+          isActive: dbUser.isActive,
           organizationId: dbUser.organizationId,
           organization: dbUser.organization,
+          createdAt: dbUser.createdAt,
+          updatedAt: dbUser.updatedAt,
         };
         
         console.log('Token refreshed successfully');
@@ -193,7 +223,11 @@ export const authenticateWithCookies = async (req, res, next) => {
  * Optional authentication middleware - doesn't throw if no auth
  * Useful for routes that work for both authenticated and unauthenticated users
  */
-export const optionalAuth = async (req, res, next) => {
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { accessToken, refreshToken } = getTokensFromCookies(req);
 
@@ -204,8 +238,19 @@ export const optionalAuth = async (req, res, next) => {
     // Try to authenticate, but don't throw on failure
     if (accessToken) {
       try {
-        const user = await verifyAccessToken(accessToken);
-        req.user = { userId: user.id, email: user.email };
+        const { supabaseUser, dbUser } = await verifyAccessToken(accessToken);
+        (req as AuthenticatedRequest).user = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar,
+          role: dbUser.role,
+          isActive: dbUser.isActive,
+          organizationId: dbUser.organizationId,
+          organization: dbUser.organization,
+          createdAt: dbUser.createdAt,
+          updatedAt: dbUser.updatedAt,
+        };
         return next();
       } catch (error) {
         // Try refresh
@@ -216,9 +261,19 @@ export const optionalAuth = async (req, res, next) => {
       try {
         const refreshResult = await refreshAccessToken(refreshToken);
         setAuthCookies(res, refreshResult.accessToken, refreshResult.refreshToken);
-        req.user = { 
-          userId: refreshResult.user.id, 
-          email: refreshResult.user.email 
+        
+        const { supabaseUser, dbUser } = await verifyAccessToken(refreshResult.accessToken);
+        (req as AuthenticatedRequest).user = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar,
+          role: dbUser.role,
+          isActive: dbUser.isActive,
+          organizationId: dbUser.organizationId,
+          organization: dbUser.organization,
+          createdAt: dbUser.createdAt,
+          updatedAt: dbUser.updatedAt,
         };
         return next();
       } catch (error) {

@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from 'express';
 import { authenticateWithCookies } from './cookieAuth.js';
 
 /**
@@ -14,7 +15,7 @@ import { authenticateWithCookies } from './cookieAuth.js';
 
 // Define public routes that don't require authentication
 // Note: paths are relative to /api since middleware is applied to /api routes
-const PUBLIC_ROUTES = [
+const PUBLIC_ROUTES: string[] = [
   // Health check and system routes (full paths)
   '/health',
   '/api-docs',
@@ -34,7 +35,7 @@ const PUBLIC_ROUTES = [
 /**
  * Check if a route should be public (no authentication required)
  */
-function isPublicRoute(method, path) {
+function isPublicRoute(method: string, path: string): boolean {
   // Check exact method:path matches
   const methodPath = `${method}:${path}`;
   if (PUBLIC_ROUTES.includes(methodPath)) {
@@ -62,7 +63,7 @@ function isPublicRoute(method, path) {
  * 
  * Applies authentication to all routes except those explicitly marked as public
  */
-export const secureByDefault = (req, res, next) => {
+export const secureByDefault = (req: Request, res: Response, next: NextFunction): void => {
   const method = req.method;
   const path = req.path;
   
@@ -74,14 +75,15 @@ export const secureByDefault = (req, res, next) => {
   
   // All other routes require authentication
   console.log(`🔒 Protected route: ${method} ${path} - requiring authentication`);
-  return authenticateWithCookies(req, res, next);
+  // Call authenticateWithCookies and handle the Promise properly
+  authenticateWithCookies(req, res, next);
 };
 
 /**
  * Helper function to mark additional routes as public
  * Useful for dynamic route registration
  */
-export const addPublicRoute = (route) => {
+export const addPublicRoute = (route: string): void => {
   if (!PUBLIC_ROUTES.includes(route)) {
     PUBLIC_ROUTES.push(route);
     console.log(`➕ Added public route: ${route}`);
@@ -91,7 +93,7 @@ export const addPublicRoute = (route) => {
 /**
  * Get list of all public routes (for debugging)
  */
-export const getPublicRoutes = () => {
+export const getPublicRoutes = (): string[] => {
   return [...PUBLIC_ROUTES];
 };
 

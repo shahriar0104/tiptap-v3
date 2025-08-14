@@ -1,8 +1,8 @@
-import {createClient} from '@supabase/supabase-js';
-import {config} from './app.js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { config } from './app.js';
 
 // Create Supabase client for server-side operations with better timeout handling
-const supabase = createClient(
+const supabase: SupabaseClient = createClient(
   config.supabase.url,
   config.supabase.anonKey,
   {
@@ -12,17 +12,18 @@ const supabase = createClient(
       detectSessionInUrl: false
     },
     global: {
-      fetch: (url, options = {}) => {
+      fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
         return fetch(url, {
           ...options,
-          timeout: process.env.REQ_TIMEOUT, // 30-second timeout instead of the default 10s
+          // @ts-ignore - timeout is not in RequestInit type but works in Node.js
+          timeout: parseInt(process.env['REQ_TIMEOUT'] || '30000'), // 30-second timeout instead of the default 10s
         });
       },
     },
   }
 );
 
-export const supabaseAdmin = createClient(
+export const supabaseAdmin: SupabaseClient = createClient(
   config.supabase.url,
   config.supabase.serviceRoleKey,
   {

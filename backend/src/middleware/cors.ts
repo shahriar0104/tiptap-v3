@@ -1,11 +1,12 @@
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
+import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/app.js';
 
 /**
  * CORS configuration middleware
  */
-export const corsOptions = {
-  origin: (origin, callback) => {
+export const corsOptions: CorsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
@@ -35,14 +36,15 @@ export const corsOptions = {
 /**
  * CORS error handler
  */
-export const corsErrorHandler = (err, req, res, next) => {
+export const corsErrorHandler = (err: Error, req: Request, res: Response, next: NextFunction): void => {
   if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       message: 'CORS policy: Origin not allowed',
     });
+    return;
   }
   next(err);
 };
 
-export default cors(corsOptions); 
+export default cors(corsOptions);

@@ -1,15 +1,29 @@
 import { PrismaClient } from '@prisma/client';
 
-class Database {
-  constructor() {
-    this.prisma = null;
-    this._isConnected = false;
-  }
+interface DatabaseUrlInfo {
+  protocol?: string;
+  host?: string;
+  port?: string;
+  database?: string;
+  hasUsername?: boolean;
+  hasPassword?: boolean;
+  isValid: boolean;
+  error?: string;
+}
 
-  async connect() {
+interface HealthCheckResult {
+  status: 'healthy' | 'unhealthy' | 'disconnected';
+  message: string;
+}
+
+class Database {
+  private prisma: PrismaClient | null = null;
+  private _isConnected: boolean = false;
+
+  async connect(): Promise<PrismaClient> {
     try {
       // Validate DATABASE_URL
-      const databaseUrl = process.env.DATABASE_URL;
+      const databaseUrl = process.env['DATABASE_URL'];
       if (!databaseUrl) {
         throw new Error('DATABASE_URL environment variable is required');
       }
@@ -23,7 +37,7 @@ class Database {
             url: databaseUrl,
           },
         },
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn', 'info'] : ['error'],
+        log: process.env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn', 'info'] : ['error'],
         errorFormat: 'pretty',
       });
 
@@ -36,20 +50,22 @@ class Database {
         await this.prisma.$queryRaw`SELECT 1 as test`;
         console.log('✅ Database connection test successful');
       } catch (queryError) {
-        console.error('❌ Database query test failed:', queryError);
-        throw new Error(`Database connection test failed: ${queryError.message}`);
+        const error = queryError as Error;
+        console.error('❌ Database query test failed:', error);
+        throw new Error(`Database connection test failed: ${error.message}`);
       }
 
       this._isConnected = true;
       console.log('✅ Database connected successfully');
-      console.log('🌍 Environment:', process.env.NODE_ENV);
+      console.log('🌍 Environment:', process.env['NODE_ENV']);
       console.log('🔧 Prisma client generated and ready');
       
       return this.prisma;
     } catch (error) {
+      const err = error as Error;
       console.error('❌ Database connection failed:');
-      console.error('   Error:', error.message);
-      console.error('   Stack:', error.stack);
+      console.error('   Error:', err.message);
+      console.error('   Stack:', err.stack);
       
       // Provide helpful debugging information
       this.printDebugInfo();
@@ -58,7 +74,7 @@ class Database {
     }
   }
 
-  validateDatabaseUrl(url) {
+  private validateDatabaseUrl(url: string): DatabaseUrlInfo {
     try {
       const urlObj = new URL(url);
       return {
@@ -71,22 +87,23 @@ class Database {
         isValid: true
       };
     } catch (error) {
+      const err = error as Error;
       return {
         isValid: false,
-        error: error.message
+        error: err.message
       };
     }
   }
 
-  printDebugInfo() {
+  private printDebugInfo(): void {
     console.log('\n🔍 Debug Information:');
-    console.log('   NODE_ENV:', process.env.NODE_ENV);
-    console.log('   DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('   SUPABASE_URL exists:', !!process.env.SUPABASE_URL);
-    console.log('   SUPABASE_ANON_KEY exists:', !!process.env.SUPABASE_ANON_KEY);
+    console.log('   NODE_ENV:', process.env['NODE_ENV']);
+    console.log('   DATABASE_URL exists:', !!process.env['DATABASE_URL']);
+    console.log('   SUPABASE_URL exists:', !!process.env['SUPABASE_URL']);
+    console.log('   SUPABASE_ANON_KEY exists:', !!process.env['SUPABASE_ANON_KEY']);
     
-    if (process.env.DATABASE_URL) {
-      const urlInfo = this.validateDatabaseUrl(process.env.DATABASE_URL);
+    if (process.env['DATABASE_URL']) {
+      const urlInfo = this.validateDatabaseUrl(process.env['DATABASE_URL']);
       console.log('   DATABASE_URL format:', urlInfo);
     }
     
@@ -98,7 +115,7 @@ class Database {
     console.log('   5. Try running migrations: npm run prisma:migrate');
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     if (this.prisma) {
       try {
         await this.prisma.$disconnect();
@@ -110,7 +127,7 @@ class Database {
     }
   }
 
-  getClient() {
+  getClient(): PrismaClient {
     if (!this.prisma) {
       throw new Error('Database not connected. Call connect() first.');
     }
@@ -120,12 +137,12 @@ class Database {
     return this.prisma;
   }
 
-  isConnected() {
+  isConnected(): boolean {
     return this._isConnected && this.prisma !== null;
   }
 
   // Helper method for transactions
-  async transaction(callback) {
+  async transaction<T>(callback: (prisma: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>): Promise<T> {
     if (!this.prisma) {
       throw new Error('Database not connected. Call connect() first.');
     }
@@ -136,8 +153,12 @@ class Database {
     return await this.prisma.$transaction(callback);
   }
 
+  async executeTransaction<T>(callback: (prisma: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>): Promise<T> {
+    return this.getClient().$transaction(callback);
+  }
+
   // Health check method
-  async healthCheck() {
+  async healthCheck(): Promise<HealthCheckResult> {
     try {
       if (!this.prisma || !this._isConnected) {
         return { status: 'disconnected', message: 'Database not connected' };
@@ -146,7 +167,8 @@ class Database {
       await this.prisma.$queryRaw`SELECT 1 as health_check`;
       return { status: 'healthy', message: 'Database connection is working' };
     } catch (error) {
-      return { status: 'unhealthy', message: error.message };
+      const err = error as Error;
+      return { status: 'unhealthy', message: err.message };
     }
   }
 }
@@ -154,4 +176,4 @@ class Database {
 // Create a singleton instance
 const database = new Database();
 
-export default database; 
+export default database;

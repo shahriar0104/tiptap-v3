@@ -1,10 +1,15 @@
+import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
+import { ApiErrorResponse } from '../types/index.js';
 
 /**
  * Custom error class for API errors
  */
 export class ApiError extends Error {
-  constructor(message, statusCode = 500, isOperational = true) {
+  public readonly statusCode: number;
+  public readonly isOperational: boolean;
+
+  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
@@ -17,9 +22,13 @@ export class ApiError extends Error {
 /**
  * Error handler middleware
  */
-export const errorHandler = (err, req, res, next) => {
-  let error = { ...err };
-  error.message = err.message;
+export const errorHandler = (
+  err: Error | ApiError | Prisma.PrismaClientKnownRequestError | Prisma.PrismaClientValidationError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  let error: ApiError = err instanceof ApiError ? err : new ApiError(err.message);
 
   // Log error for debugging
   console.error('Error:', {
@@ -59,15 +68,17 @@ export const errorHandler = (err, req, res, next) => {
     error = new ApiError('Invalid data provided', 400);
   }
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
+  // Mongoose validation error (legacy support)
+  if (err.name === 'ValidationError' && 'errors' in err) {
+    const mongooseErr = err as { errors: Record<string, { message: string }> };
+    const message = Object.values(mongooseErr.errors).map(val => val.message).join(', ');
     error = new ApiError(message, 400);
   }
 
-  // Mongoose duplicate key error
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+  // Mongoose duplicate key error (legacy support)
+  if ('code' in err && err.code === '11000' && 'keyValue' in err) {
+    const duplicateErr = err as { keyValue: Record<string, unknown> };
+    const field = Object.keys(duplicateErr.keyValue)[0];
     const message = `${field} already exists`;
     error = new ApiError(message, 409);
   }
@@ -87,36 +98,41 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Syntax error (invalid JSON)
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+  if (err instanceof SyntaxError && 'status' in err && err.status === 400 && 'body' in err) {
     error = new ApiError('Invalid JSON format', 400);
   }
 
-  // Custom API errors
-  if (err instanceof ApiError) {
-    error = err;
+  // Default error handling
+  if (!error.statusCode) {
+    error = new ApiError('Internal server error', 500);
   }
 
-  // Default error
-  if (!error.statusCode) {
-    error.statusCode = 500;
-    error.message = 'Internal server error';
+  // Prepare error response
+  const errorResponse: ApiErrorResponse = {
+    success: false,
+    message: error.message,
+    error: error.name,
+    statusCode: error.statusCode,
+    timestamp: new Date().toISOString(),
+    path: req.originalUrl
+  };
+
+  // Add stack trace in development
+  if (process.env['NODE_ENV'] === 'development') {
+    if (error.stack) {
+      (errorResponse as ApiErrorResponse & { stack?: string; details?: unknown }).stack = error.stack;
+    }
+    (errorResponse as ApiErrorResponse & { stack?: string; details?: unknown }).details = error;
   }
 
   // Send error response
-  res.status(error.statusCode).json({
-    success: false,
-    message: error.message,
-    ...(process.env.NODE_ENV === 'development' && {
-      stack: error.stack,
-      error: error,
-    }),
-  });
+  res.status(error.statusCode).json(errorResponse);
 };
 
 /**
  * 404 handler for undefined routes
  */
-export const notFoundHandler = (req, res, next) => {
+export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
   const error = new ApiError(`Route ${req.originalUrl} not found`, 404);
   next(error);
 };
@@ -124,10 +140,12 @@ export const notFoundHandler = (req, res, next) => {
 /**
  * Async error wrapper for controllers
  */
-export const asyncHandler = (fn) => {
-  return (req, res, next) => {
+export const asyncHandler = <T extends Request, U extends Response>(
+  fn: (req: T, res: U, next: NextFunction) => Promise<void>
+) => {
+  return (req: T, res: U, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-export default errorHandler; 
+export default errorHandler;
