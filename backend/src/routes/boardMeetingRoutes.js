@@ -1,10 +1,7 @@
 import express from 'express';
 import boardMeetingController from '../controllers/boardMeetingController.js';
-import {
-  validateCreateBoardMeeting,
-  validateUpdateBoardMeeting,
-  validateId,
-} from '../utils/validation.js';
+import {validateBoardMeeting, validateUpdateBoardMeeting} from '../middleware/validation.js';
+import {requireEditor} from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -69,6 +66,8 @@ const router = express.Router();
  *   post:
  *     summary: Create a new board meeting with agenda items
  *     tags: [Board Meetings]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -96,7 +95,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', validateCreateBoardMeeting, boardMeetingController.createBoardMeeting);
+router.post('/', requireEditor, validateBoardMeeting, boardMeetingController.createBoardMeeting);
 
 /**
  * @swagger
@@ -112,7 +111,7 @@ router.post('/', validateCreateBoardMeeting, boardMeetingController.createBoardM
  *           enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
  *         description: Filter by status
  *       - in: query
- *         name: authorId
+ *         name: userId
  *         schema:
  *           type: string
  *         description: Filter by author ID
@@ -156,6 +155,7 @@ router.post('/', validateCreateBoardMeeting, boardMeetingController.createBoardM
  *       500:
  *         description: Internal server error
  */
+// All routes are now authenticated by default via secureByDefault middleware
 router.get('/', boardMeetingController.getAllBoardMeetings);
 
 /**
@@ -210,18 +210,7 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [DRAFT, PUBLISHED, ARCHIVED, APPROVED, REJECTED]
- *               meetingDate:
- *                 type: string
- *                 format: date-time
+ *             $ref: '#/components/schemas/BoardMeeting'
  *     responses:
  *       200:
  *         description: Board meeting updated successfully
@@ -238,6 +227,8 @@ router.get('/:id', boardMeetingController.getBoardMeeting);
  *                   $ref: '#/components/schemas/BoardMeeting'
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Board meeting not found
  *       500:
@@ -251,6 +242,8 @@ router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoar
  *   delete:
  *     summary: Delete a board meeting
  *     tags: [Board Meetings]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -270,6 +263,8 @@ router.put('/:id', validateUpdateBoardMeeting, boardMeetingController.updateBoar
  *                   type: boolean
  *                 message:
  *                   type: string
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Board meeting not found
  *       500:

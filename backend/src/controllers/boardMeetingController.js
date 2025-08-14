@@ -6,30 +6,40 @@ class BoardMeetingController {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async createBoardMeeting(req, res) {
+  async createBoardMeeting(req, res, next) {
     try {
-      const { title, description, status, meetingDate, agendaItems } = req.validatedData;
-      
-      // For now, use a default author ID (in production, this would come from auth middleware)
-      const authorId = req.user?.id || 'default-author-id';
-      
-      const boardMeetingData = {
-        title,
-        description,
-        status,
-        meetingDate,
-      };
+      // Use validated data from validation middleware
+      const { boardMeetingData, agendaItems } = req.validatedData || req.body;
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
 
-      const result = await boardMeetingService.createBoardMeetingWithAgendaItems(
+      // Ensure a user is authenticated and has an organization
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
+      if (!organizationId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must belong to an organization to create board meetings',
+        });
+      }
+      
+      const boardMeeting = await boardMeetingService.createBoardMeetingWithAgendaItems(
         boardMeetingData,
         agendaItems,
-        authorId
+        userId,
+        organizationId
       );
 
       res.status(201).json({
         success: true,
-        message: result.message,
-        data: result.data,
+        message: boardMeeting.message,
+        data: boardMeeting.data,
+        // data: result.data,
       });
     } catch (error) {
       console.error('Controller error - createBoardMeeting:', error);
@@ -97,11 +107,11 @@ class BoardMeetingController {
    */
   async getAllBoardMeetings(req, res) {
     try {
-      const { status, authorId, limit, offset } = req.query;
+      const { status, userId, limit, offset } = req.query;
       
       const filters = {
         status: status || undefined,
-        authorId: authorId || undefined,
+        userId: userId || undefined,
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0,
       };
@@ -166,6 +176,26 @@ class BoardMeetingController {
 
   /**
    * Delete a board meeting
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  // async getAllBoardMeetings(req, res, next) {
+  //   try {
+  //     // Filter by organization if user is authenticated
+  //     const organizationId = req.user?.organizationId;
+  //     const boardMeetings = await boardMeetingService.getAllBoardMeetings(organizationId);
+  //
+  //     res.status(200).json({
+  //       success: true,
+  //       data: boardMeetings,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+
+  /**
+   * Delete a board meeting by ID
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */

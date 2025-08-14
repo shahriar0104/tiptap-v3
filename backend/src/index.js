@@ -5,11 +5,15 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import cookieParser from 'cookie-parser';
 
-import { config } from './config/app.js';
+import {config} from './config/app.js';
 import database from './config/database.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import corsMiddleware, { corsErrorHandler } from './middleware/cors.js';
+import {errorHandler, notFoundHandler} from './middleware/errorHandler.js';
+import corsMiddleware, {corsErrorHandler} from './middleware/cors.js';
+import secureByDefault from './middleware/secureByDefault.js';
+import boardMeetingRoutes from './routes/boardMeetingRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -90,6 +94,9 @@ if (config.nodeEnv === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Cookie parsing middleware
+app.use(cookieParser());
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -158,8 +165,15 @@ const startServer = async () => {
     console.log('🚀 Starting server...');
     await database.connect();
     
-    const boardMeetingRoutes = (await import('./routes/boardMeetingRoutes.js')).default;
+    // Apply secure-by-default middleware to all API routes
+    console.log('Applying secure-by-default authentication...');
+    app.use('/api', secureByDefault);
+    console.log('✅ Secure-by-default middleware applied');
+    
+    // Mount routes
+    console.log('Mounting routes...');
     app.use('/api/board-meetings', boardMeetingRoutes);
+    app.use('/api/auth', authRoutes);
     console.log('✅ Routes mounted successfully');
     
     // 404 handler (must be after routes)

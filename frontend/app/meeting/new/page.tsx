@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
 import DatePicker from "@/components/ui-helper/DatePicker";
+import {api} from "@/lib/api";
 
 export default function NewMeetingPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,26 +17,31 @@ export default function NewMeetingPage() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const meetingData = {
-      title: formData.get('title') as string,
-      meetingDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
+    
+    // Structure data according to backend validation requirements
+    const requestData = {
+      boardMeetingData: {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || null,
+        meetingDate: selectedDate ? selectedDate.toISOString() : null,
+        status: 'DRAFT'
+      },
+      agendaItems: [] // Start with empty agenda items, can be added later
     };
 
     try {
-      const response = await fetch('/api/board-meetings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(meetingData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create meeting');
+      const result = await api.post<{id: string}>('/board-meetings', requestData);
+      
+      if (!result.success) {
+        throw new Error(result.error || result.message || 'Failed to create meeting');
       }
 
-      const result = await response.json();
-      router.push(`/meetings/${result.id}`);
+      // Navigate to the created meeting
+      if (result.data?.id) {
+        router.push(`/meeting/${result.data.id}`);
+      } else {
+        router.push('/dashboard'); // Fallback to dashboard if no ID
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -45,18 +51,18 @@ export default function NewMeetingPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Create New Board Meeting
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Set up a new board meeting with essential details.
-        </p>
-      </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Create New Board Meeting
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Set up a new board meeting with essential details.
+          </p>
+        </div>
 
-      {/* Form Card */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
+        {/* Form Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Message */}
           {error && (
@@ -87,6 +93,32 @@ export default function NewMeetingPage() {
                 transition-colors duration-200
               "
             />
+          </div>
+
+          {/* Description Field */}
+          <div>
+            <label
+              htmlFor="description"
+              className="block text-sm font-semibold text-gray-900 dark:text-white mb-2"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              placeholder="Optional description of the meeting purpose and key topics"
+              className="
+                w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                placeholder-gray-500 dark:placeholder-gray-400
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                transition-colors duration-200 resize-vertical
+              "
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Optional: Provide context about the meeting's purpose and agenda
+            </p>
           </div>
 
           {/* Date Field */}
@@ -145,6 +177,6 @@ export default function NewMeetingPage() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
   );
 }

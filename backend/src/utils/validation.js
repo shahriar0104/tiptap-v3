@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { config } from '../config/app.js';
+import {z} from 'zod';
+import {config} from '../config/app.js';
 
 // Base validation schemas
 export const agendaItemSchema = z.object({
@@ -38,7 +38,7 @@ export const boardMeetingSchema = z.object({
   agendaItems: z.array(agendaItemSchema)
     .max(config.validation.maxAgendaItems, `Cannot have more than ${config.validation.maxAgendaItems} agenda items`)
     .optional(),
-  authorId: z.string()
+  userId: z.string()
     .min(1, 'Author ID is required')
     .optional(), // Optional for now, will be set from auth middleware
 });

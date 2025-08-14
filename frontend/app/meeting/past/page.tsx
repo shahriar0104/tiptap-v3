@@ -1,19 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
-import { 
-  MdCalendarToday, 
-  MdAccessTime, 
-  MdDescription,
-  MdArrowBack,
-  MdRefresh
-} from "react-icons/md";
 
-type BoardMeetingsResponse = {
-  success: boolean;
-  data: BoardMeeting[];
-};
+import {useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
+import {api} from "@/lib/api";
+import {MdAccessTime, MdArrowBack, MdCalendarToday, MdDescription, MdRefresh} from "react-icons/md";
 
 interface BoardMeeting {
   id: string;
@@ -38,7 +28,7 @@ export default function PastMeetingsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await api.get<BoardMeetingsResponse>('/board-meetings');
+      const response = await api.get<BoardMeeting[]>('/board-meetings');
       
       if (response && response?.success) {
         setMeetings(response?.data || []);
@@ -84,8 +74,8 @@ export default function PastMeetingsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -200,6 +190,6 @@ export default function PastMeetingsPage() {
           )}
         </div>
       )}
-    </div>
+      </div>
   );
 }
