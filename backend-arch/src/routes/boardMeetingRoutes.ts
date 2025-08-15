@@ -98,8 +98,7 @@ const { boardMeetingController, authMiddleware } = container;
  */
 router.post('/organization', boardMeetingController.createOrganizationWithBoardMeeting);
 
-// All routes require authentication
-router.use(authMiddleware.authenticate);
+// Routes below require organization membership
 router.use(authMiddleware.requireOrganization);
 
 /**

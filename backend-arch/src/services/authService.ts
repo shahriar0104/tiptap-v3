@@ -38,6 +38,46 @@ export class AuthService {
     }
   }
 
+  async login(email: string, password: string): Promise<{ user: User; session: any }> {
+    try {
+      // Authenticate with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error || !data.session || !data.user) {
+        throw new UnauthorizedError('Invalid email or password');
+      }
+
+      // Get user from our database
+      let user = await this.userModel.findById(data.user.id);
+
+      if (!user) {
+        // Create user if doesn't exist (shouldn't happen for login, but safety check)
+        const userData: CreateUserData = {
+          id: data.user.id,
+          email: data.user.email!,
+          firstName: data.user.user_metadata?.['firstName'] || null,
+          lastName: data.user.user_metadata?.['lastName'] || null,
+          role: 'MEMBER',
+        };
+        
+        user = await this.userModel.create(userData);
+      }
+
+      return {
+        user,
+        session: data.session,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        throw error;
+      }
+      throw new UnauthorizedError('Login failed');
+    }
+  }
+
   async getCurrentUser(userId: string): Promise<User> {
     const user = await this.userModel.findById(userId);
     

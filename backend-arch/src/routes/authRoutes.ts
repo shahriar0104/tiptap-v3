@@ -7,6 +7,53 @@ const { authController, authMiddleware } = container;
 
 /**
  * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate user with email and password
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - missing email or password
+ *       401:
+ *         description: Invalid email or password
+ *       429:
+ *         description: Too many requests
+ */
+router.post('/login', authRateLimit, authController.login);
+
+/**
+ * @swagger
  * /api/auth/set-cookies:
  *   post:
  *     summary: Set authentication cookies
@@ -107,7 +154,7 @@ router.post('/logout', authController.logout);
  *       401:
  *         description: Authentication required
  */
-router.get('/me', authMiddleware.authenticate, authController.getCurrentUser);
+router.get('/me', authController.getCurrentUser);
 
 /**
  * @swagger
@@ -150,7 +197,7 @@ router.get('/me', authMiddleware.authenticate, authController.getCurrentUser);
  *       409:
  *         description: Email already exists
  */
-router.put('/profile', authMiddleware.authenticate, authController.updateProfile);
+router.put('/profile', authController.updateProfile);
 
 /**
  * @swagger
@@ -179,7 +226,6 @@ router.put('/profile', authMiddleware.authenticate, authController.updateProfile
  *         description: Authentication required
  */
 router.get('/organization/users', 
-  authMiddleware.authenticate, 
   authMiddleware.requireOrganization,
   authController.getOrganizationUsers
 );

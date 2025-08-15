@@ -13,8 +13,7 @@ import {
 const router = Router();
 const { agendaGroupController, agendaItemController, authMiddleware } = container;
 
-// All routes require authentication
-router.use(authMiddleware.authenticate);
+// All routes below are protected by global auth middleware
 router.use(authMiddleware.requireOrganization);
 
 // Agenda Group routes

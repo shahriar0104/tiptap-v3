@@ -8,6 +8,7 @@ import { corsConfig } from './config/cors';
 import { swaggerSpec } from './config/swagger';
 import { generalRateLimit } from './middlewares/rateLimitMiddleware';
 import { errorHandler, notFoundHandler } from './middlewares/errorMiddleware';
+import { container } from './container';
 import routes from './routes';
 
 const app = express();
@@ -28,6 +29,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cookie parsing middleware
 app.use(cookieParser());
+
+// Global authentication middleware (handles public/protected routes automatically)
+app.use(container.authMiddleware.authenticate);
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

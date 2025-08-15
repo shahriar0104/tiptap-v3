@@ -1,11 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/authService';
+import { AuthService } from '../services';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess, sendError } from '../utils/response';
 import { cookieConfig, COOKIE_NAMES } from '../config/cookies';
 
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        sendError(res, 'Email and password are required', 400);
+        return;
+      }
+
+      const result = await this.authService.login(email, password);
+
+      // Set authentication cookies
+      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, result.session.access_token, {
+        ...cookieConfig,
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      if (result.session.refresh_token) {
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, result.session.refresh_token, {
+          ...cookieConfig,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+      }
+
+      sendSuccess(res, result.user, 'Login successful');
+    } catch (error) {
+      next(error);
+    }
+  };
 
   getCurrentUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
