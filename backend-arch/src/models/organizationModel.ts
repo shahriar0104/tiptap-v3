@@ -1,40 +1,50 @@
-import { Organization, Prisma } from '@prisma/client';
-import prisma from '../config/database';
+import { PrismaClient, Organization, Prisma } from '@prisma/client';
 
-export class OrganizationModel {
+export interface OrganizationModel {
+  create(data: Prisma.OrganizationCreateInput): Promise<Organization>;
+  findById(id: string): Promise<Organization | null>;
+  findByName(name: string): Promise<Organization | null>;
+  update(id: string, data: Prisma.OrganizationUpdateInput): Promise<Organization>;
+  delete(id: string): Promise<Organization>;
+  findAll(): Promise<Organization[]>;
+}
+
+export class OrganizationModelImpl implements OrganizationModel {
+  constructor(private prisma: PrismaClient) {}
+
   async create(data: Prisma.OrganizationCreateInput): Promise<Organization> {
-    return prisma.organization.create({
+    return this.prisma.organization.create({
       data,
     });
   }
 
   async findById(id: string): Promise<Organization | null> {
-    return prisma.organization.findUnique({
+    return this.prisma.organization.findUnique({
       where: { id },
     });
   }
 
   async findByName(name: string): Promise<Organization | null> {
-    return prisma.organization.findFirst({
+    return this.prisma.organization.findFirst({
       where: { name },
     });
   }
 
   async update(id: string, data: Prisma.OrganizationUpdateInput): Promise<Organization> {
-    return prisma.organization.update({
+    return this.prisma.organization.update({
       where: { id },
       data,
     });
   }
 
   async delete(id: string): Promise<Organization> {
-    return prisma.organization.delete({
+    return this.prisma.organization.delete({
       where: { id },
     });
   }
 
   async findAll(): Promise<Organization[]> {
-    return prisma.organization.findMany({
+    return this.prisma.organization.findMany({
       orderBy: { createdAt: 'desc' },
     });
   }

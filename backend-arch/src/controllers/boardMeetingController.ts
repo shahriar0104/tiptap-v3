@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { BoardMeetingService } from '../services/boardMeetingService';
+import type { BoardMeetingService } from '../services/boardMeetingService';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess, sendPaginatedResponse } from '../utils/response';
 import { 
@@ -17,10 +17,10 @@ export class BoardMeetingController {
       const user = (req as AuthenticatedRequest).user;
       const data = req.body as CreateBoardMeetingInput;
 
-      // Convert string date to Date object
+      // Convert string date to Date object if provided
       const meetingData = {
         ...data,
-        scheduledAt: new Date(data.scheduledAt),
+        meetingDate: data.meetingDate ? new Date(data.meetingDate) : undefined,
       };
 
       const meeting = await this.boardMeetingService.createBoardMeeting(meetingData, user.id);
@@ -32,10 +32,9 @@ export class BoardMeetingController {
 
   getBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetBoardMeetingParams;
 
-      const meeting = await this.boardMeetingService.getBoardMeetingById(id, user.organizationId || undefined);
+      const meeting = await this.boardMeetingService.getBoardMeetingById(id);
       sendSuccess(res, meeting, 'Board meeting retrieved successfully');
     } catch (error) {
       next(error);
@@ -44,17 +43,14 @@ export class BoardMeetingController {
 
   getBoardMeetings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
       const query = req.query as GetBoardMeetingsQuery;
 
       const page = query.page ? parseInt(query.page, 10) : 1;
       const limit = query.limit ? parseInt(query.limit, 10) : 10;
-      const organizationId = query.organizationId || user.organizationId;
-      const status = query.status;
 
       const result = await this.boardMeetingService.getBoardMeetings(
-        organizationId || undefined,
-        status,
+        query.organizationId,
+        query.status,
         page,
         limit
       );
@@ -74,20 +70,18 @@ export class BoardMeetingController {
 
   updateBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetBoardMeetingParams;
       const data = req.body as UpdateBoardMeetingInput;
 
       // Convert string date to Date object if provided
       const updateData = {
         ...data,
-        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
+        meetingDate: data.meetingDate ? new Date(data.meetingDate) : undefined,
       };
 
       const meeting = await this.boardMeetingService.updateBoardMeeting(
         id,
-        updateData,
-        user.organizationId || undefined
+        updateData
       );
       sendSuccess(res, meeting, 'Board meeting updated successfully');
     } catch (error) {
@@ -97,10 +91,9 @@ export class BoardMeetingController {
 
   deleteBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetBoardMeetingParams;
 
-      await this.boardMeetingService.deleteBoardMeeting(id, user.organizationId || undefined);
+      await this.boardMeetingService.deleteBoardMeeting(id);
       sendSuccess(res, null, 'Board meeting deleted successfully');
     } catch (error) {
       next(error);
@@ -109,14 +102,12 @@ export class BoardMeetingController {
 
   updateMeetingStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetBoardMeetingParams;
-      const { status } = req.body as { status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' };
+      const { status } = req.body as { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' };
 
       const meeting = await this.boardMeetingService.updateMeetingStatus(
         id,
-        status,
-        user.organizationId || undefined
+        status
       );
       sendSuccess(res, meeting, 'Meeting status updated successfully');
     } catch (error) {
@@ -126,13 +117,13 @@ export class BoardMeetingController {
 
   getOrganizationMeetings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = (req as AuthenticatedRequest).user;
+      const { organizationId } = req.params;
 
-      if (!user.organizationId) {
-        throw new Error('User is not part of an organization');
+      if (!organizationId) {
+        throw new Error('Organization ID is required');
       }
 
-      const meetings = await this.boardMeetingService.getBoardMeetingsByOrganization(user.organizationId);
+      const meetings = await this.boardMeetingService.getBoardMeetingsByOrganization(organizationId);
       sendSuccess(res, meetings, 'Organization meetings retrieved successfully');
     } catch (error) {
       next(error);

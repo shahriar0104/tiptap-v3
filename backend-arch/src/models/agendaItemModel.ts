@@ -1,5 +1,4 @@
-import { Prisma, AgendaItem, AgendaItemStatus } from '@prisma/client';
-import prisma from '../config/database';
+import { PrismaClient, Prisma, AgendaItem, AgendaItemStatus } from '@prisma/client';
 import { CreateAgendaItemData, UpdateAgendaItemData } from '../types';
 
 type AgendaItemWithRelations = Prisma.AgendaItemGetPayload<{
@@ -9,27 +8,26 @@ type AgendaItemWithRelations = Prisma.AgendaItemGetPayload<{
         id: true;
         title: true;
         boardMeetingId: true;
-        boardMeeting: {
-          select: {
-            id: true;
-            title: true;
-            organizationId: true;
-          };
-        };
-      };
-    };
-    createdBy: {
-      select: {
-        id: true;
-        email: true;
-        firstName: true;
-        lastName: true;
       };
     };
   };
 }>;
 
-export class AgendaItemModel {
+export interface AgendaItemModel {
+  findById(id: string): Promise<AgendaItemWithRelations | null>;
+  findByAgendaGroupId(agendaGroupId: string): Promise<AgendaItemWithRelations[]>;
+  create(data: CreateAgendaItemData): Promise<AgendaItem>;
+  update(id: string, data: UpdateAgendaItemData): Promise<AgendaItem>;
+  delete(id: string): Promise<AgendaItem>;
+  reorderItems(agendaGroupId: string, itemOrders: Array<{ id: string; order: number }>): Promise<void>;
+  getMaxOrder(agendaGroupId: string): Promise<number>;
+  updateStatus(id: string, status: AgendaItemStatus): Promise<AgendaItem>;
+  findByBoardMeetingId(boardMeetingId: string): Promise<AgendaItemWithRelations[]>;
+}
+
+export class AgendaItemModelImpl implements AgendaItemModel {
+  constructor(private prisma: PrismaClient) {}
+
   async findById(id: string): Promise<AgendaItemWithRelations | null> {
     const findByIdValidator = Prisma.validator<Prisma.AgendaItemFindUniqueArgs>()({
       where: { id },
@@ -48,18 +46,10 @@ export class AgendaItemModel {
             },
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
-    return prisma.agendaItem.findUnique(findByIdValidator);
+    return this.prisma.agendaItem.findUnique(findByIdValidator);
   }
 
   async findByAgendaGroupId(agendaGroupId: string): Promise<AgendaItemWithRelations[]> {
@@ -80,31 +70,21 @@ export class AgendaItemModel {
             },
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
       orderBy: { order: 'asc' },
     });
 
-    return prisma.agendaItem.findMany(findManyValidator);
+    return this.prisma.agendaItem.findMany(findManyValidator);
   }
 
-  async create(data: CreateAgendaItemData, createdById: string): Promise<AgendaItem> {
+  async create(data: CreateAgendaItemData): Promise<AgendaItem> {
     const createValidator = Prisma.validator<Prisma.AgendaItemCreateArgs>()({
       data: {
         title: data.title,
-        description: data.description || null,
+        startTime: data.startTime,
         order: data.order,
-        duration: data.duration || null,
-        type: data.type || 'DISCUSSION',
+        type: data.type || 'STANDARD',
         agendaGroupId: data.agendaGroupId,
-        createdById,
       },
       include: {
         agendaGroup: {
@@ -112,30 +92,28 @@ export class AgendaItemModel {
             id: true,
             title: true,
             boardMeetingId: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+            boardMeeting: {
+              select: {
+                id: true,
+                title: true,
+                organizationId: true,
+              },
+            },
           },
         },
       },
     });
 
-    return prisma.agendaItem.create(createValidator);
+    return this.prisma.agendaItem.create(createValidator);
   }
 
   async update(id: string, data: UpdateAgendaItemData): Promise<AgendaItem> {
     const updateData: Prisma.AgendaItemUpdateInput = {};
     
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) updateData.description = data.description;
     if (data.order !== undefined) updateData.order = data.order;
-    if (data.duration !== undefined) updateData.duration = data.duration;
     if (data.type !== undefined) updateData.type = data.type;
+    if (data.startTime !== undefined) updateData.startTime = data.startTime;
     if (data.status !== undefined) updateData.status = data.status;
 
     const updateValidator = Prisma.validator<Prisma.AgendaItemUpdateArgs>()({
@@ -147,20 +125,19 @@ export class AgendaItemModel {
             id: true,
             title: true,
             boardMeetingId: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+            boardMeeting: {
+              select: {
+                id: true,
+                title: true,
+                organizationId: true,
+              },
+            },
           },
         },
       },
     });
 
-    return prisma.agendaItem.update(updateValidator);
+    return this.prisma.agendaItem.update(updateValidator);
   }
 
   async delete(id: string): Promise<AgendaItem> {
@@ -168,13 +145,13 @@ export class AgendaItemModel {
       where: { id },
     });
 
-    return prisma.agendaItem.delete(deleteValidator);
+    return this.prisma.agendaItem.delete(deleteValidator);
   }
 
   async reorderItems(agendaGroupId: string, itemOrders: Array<{ id: string; order: number }>): Promise<void> {
-    await prisma.$transaction(
+    await this.prisma.$transaction(
       itemOrders.map(({ id, order }) =>
-        prisma.agendaItem.update({
+        this.prisma.agendaItem.update({
           where: { id, agendaGroupId },
           data: { order },
         })
@@ -183,7 +160,7 @@ export class AgendaItemModel {
   }
 
   async getMaxOrder(agendaGroupId: string): Promise<number> {
-    const result = await prisma.agendaItem.aggregate({
+    const result = await this.prisma.agendaItem.aggregate({
       where: { agendaGroupId },
       _max: { order: true },
     });
@@ -201,20 +178,19 @@ export class AgendaItemModel {
             id: true,
             title: true,
             boardMeetingId: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+            boardMeeting: {
+              select: {
+                id: true,
+                title: true,
+                organizationId: true,
+              },
+            },
           },
         },
       },
     });
 
-    return prisma.agendaItem.update(updateValidator);
+    return this.prisma.agendaItem.update(updateValidator);
   }
 
   async findByBoardMeetingId(boardMeetingId: string): Promise<AgendaItemWithRelations[]> {
@@ -239,14 +215,6 @@ export class AgendaItemModel {
             },
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
       orderBy: [
         { agendaGroup: { order: 'asc' } },
@@ -254,6 +222,6 @@ export class AgendaItemModel {
       ],
     });
 
-    return prisma.agendaItem.findMany(findManyValidator);
+    return this.prisma.agendaItem.findMany(findManyValidator);
   }
 }

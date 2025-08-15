@@ -1,5 +1,10 @@
-export { UserModel } from './userModel';
-export { BoardMeetingModel } from './boardMeetingModel';
-export { AgendaGroupModel } from './agendaGroupModel';
-export { AgendaItemModel } from './agendaItemModel';
-export { OrganizationModel } from './organizationModel';
+export { UserModelImpl } from './userModel';
+export type { UserModel } from './userModel';
+export { BoardMeetingModelImpl } from './boardMeetingModel';
+export type { BoardMeetingModel } from './boardMeetingModel';
+export { AgendaGroupModelImpl } from './agendaGroupModel';
+export type { AgendaGroupModel } from './agendaGroupModel';
+export { AgendaItemModelImpl } from './agendaItemModel';
+export type { AgendaItemModel } from './agendaItemModel';
+export { OrganizationModelImpl } from './organizationModel';
+export type { OrganizationModel } from './organizationModel';

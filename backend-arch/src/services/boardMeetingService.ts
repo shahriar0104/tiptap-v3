@@ -1,12 +1,52 @@
 import { BoardMeeting, BoardMeetingStatus } from '@prisma/client';
-import { BoardMeetingModel } from '../models/boardMeetingModel';
+import type { BoardMeetingModel, CreateBoardMeetingData as ModelCreateData } from '../models/boardMeetingModel';
 import { OrganizationModel } from '../models/organizationModel';
 import { UserModel } from '../models/userModel';
 import { CreateBoardMeetingData, UpdateBoardMeetingData, PaginatedResponse } from '../types';
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/errors';
 import { supabase } from '../config/supabase';
 
-export class BoardMeetingService {
+export interface BoardMeetingService {
+  createBoardMeeting(data: CreateBoardMeetingData, createdById: string): Promise<BoardMeeting>;
+  getBoardMeetingById(id: string, userOrganizationId?: string): Promise<BoardMeeting>;
+  getBoardMeetings(
+    organizationId?: string,
+    status?: BoardMeetingStatus,
+    page?: number,
+    limit?: number
+  ): Promise<PaginatedResponse<BoardMeeting>>;
+  updateBoardMeeting(
+    id: string,
+    data: UpdateBoardMeetingData,
+    userOrganizationId?: string
+  ): Promise<BoardMeeting>;
+  deleteBoardMeeting(id: string, userOrganizationId?: string): Promise<void>;
+  getBoardMeetingsByOrganization(organizationId: string): Promise<BoardMeeting[]>;
+  updateMeetingStatus(
+    id: string,
+    status: BoardMeetingStatus,
+    userOrganizationId?: string
+  ): Promise<BoardMeeting>;
+  createOrganizationWithBoardMeeting(data: {
+    organizationName: string;
+    adminEmail: string;
+    adminPassword: string;
+    adminFirstName: string;
+    adminLastName: string;
+    boardMeetingTitle: string;
+    boardMeetingDescription?: string;
+    boardMeetingScheduledAt: string;
+    boardMeetingDuration?: number;
+    boardMeetingLocation?: string;
+  }): Promise<{
+    organization: any;
+    user: any;
+    boardMeeting: any;
+    session: any;
+  }>;
+}
+
+export class BoardMeetingServiceImpl implements BoardMeetingService {
   constructor(
     private boardMeetingModel: BoardMeetingModel,
     private organizationModel: OrganizationModel,
@@ -17,12 +57,20 @@ export class BoardMeetingService {
     data: CreateBoardMeetingData,
     createdById: string
   ): Promise<BoardMeeting> {
-    // Validate scheduled date is in the future
-    if (new Date(data.scheduledAt) <= new Date()) {
-      throw new ValidationError('Scheduled date must be in the future');
+    // Validate meeting date is in the future if provided
+    if (data.meetingDate && new Date(data.meetingDate) <= new Date()) {
+      throw new ValidationError('Meeting date must be in the future');
     }
 
-    return this.boardMeetingModel.create(data, createdById);
+    // Convert to model data format
+    const modelData: ModelCreateData = {
+      title: data.title,
+      description: data.description || undefined,
+      meetingDate: data.meetingDate || undefined,
+      organizationId: data.organizationId,
+    };
+
+    return this.boardMeetingModel.create(modelData, createdById);
   }
 
   async getBoardMeetingById(id: string, userOrganizationId?: string): Promise<BoardMeeting> {
@@ -59,7 +107,6 @@ export class BoardMeetingService {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -80,9 +127,9 @@ export class BoardMeetingService {
       throw new ForbiddenError('Access denied to this board meeting');
     }
 
-    // Validate scheduled date if being updated
-    if (data.scheduledAt && new Date(data.scheduledAt) <= new Date()) {
-      throw new ValidationError('Scheduled date must be in the future');
+    // Validate meeting date if being updated
+    if (data.meetingDate && new Date(data.meetingDate) <= new Date()) {
+      throw new ValidationError('Meeting date must be in the future');
     }
 
     // Validate status transitions
@@ -105,9 +152,9 @@ export class BoardMeetingService {
       throw new ForbiddenError('Access denied to this board meeting');
     }
 
-    // Only allow deletion of scheduled meetings
-    if (existingMeeting.status !== 'SCHEDULED') {
-      throw new ValidationError('Only scheduled meetings can be deleted');
+    // Only allow deletion of draft meetings
+    if (existingMeeting.status !== 'DRAFT') {
+      throw new ValidationError('Only draft meetings can be deleted');
     }
 
     await this.boardMeetingModel.delete(id);
@@ -141,10 +188,9 @@ export class BoardMeetingService {
 
   private validateStatusTransition(currentStatus: BoardMeetingStatus, newStatus: BoardMeetingStatus): void {
     const validTransitions: Record<BoardMeetingStatus, BoardMeetingStatus[]> = {
-      SCHEDULED: ['IN_PROGRESS', 'CANCELLED'],
-      IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
-      COMPLETED: [], // No transitions allowed from completed
-      CANCELLED: ['SCHEDULED'], // Can reschedule cancelled meetings
+      DRAFT: ['PUBLISHED', 'ARCHIVED'],
+      PUBLISHED: ['ARCHIVED'],
+      ARCHIVED: ['DRAFT'], // Can restore archived meetings to draft
     };
 
     const allowedTransitions = validTransitions[currentStatus];
@@ -195,16 +241,15 @@ export class BoardMeetingService {
       // 2. Create organization
       const organization = await this.organizationModel.create({
         name: data.organizationName,
+        slug: data.organizationName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
       });
 
       // 3. Create admin user
       const user = await this.userModel.create({
         id: supabaseUser.id,
         email: data.adminEmail,
-        firstName: data.adminFirstName,
-        lastName: data.adminLastName,
+        name: `${data.adminFirstName} ${data.adminLastName}`,
         role: 'ADMIN',
-        organizationId: organization.id,
       });
 
       // 4. Update Supabase user metadata with organization info
@@ -221,9 +266,7 @@ export class BoardMeetingService {
         {
           title: data.boardMeetingTitle,
           description: data.boardMeetingDescription,
-          scheduledAt: new Date(data.boardMeetingScheduledAt),
-          duration: data.boardMeetingDuration,
-          location: data.boardMeetingLocation,
+          meetingDate: new Date(data.boardMeetingScheduledAt),
           organizationId: organization.id,
         },
         user.id

@@ -1,4 +1,7 @@
 export { AuthService } from './authService';
-export { BoardMeetingService } from './boardMeetingService';
-export { AgendaGroupService } from './agendaGroupService';
-export { AgendaItemService } from './agendaItemService';
+export { BoardMeetingServiceImpl } from './boardMeetingService';
+export type { BoardMeetingService } from './boardMeetingService';
+export { AgendaGroupServiceImpl } from './agendaGroupService';
+export type { AgendaGroupService } from './agendaGroupService';
+export { AgendaItemServiceImpl } from './agendaItemService';
+export type { AgendaItemService } from './agendaItemService';

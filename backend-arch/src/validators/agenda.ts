@@ -6,6 +6,7 @@ export const createAgendaGroupSchema = z.object({
     title: z.string().min(1, 'Title is required').max(255, 'Title too long'),
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative'),
+    startTime: z.coerce.date(),
     boardMeetingId: z.string().uuid('Invalid board meeting ID'),
   }),
 });
@@ -15,6 +16,7 @@ export const updateAgendaGroupSchema = z.object({
     title: z.string().min(1, 'Title is required').max(255, 'Title too long').optional(),
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative').optional(),
+    startTime: z.coerce.date().optional(),
   }),
   params: z.object({
     id: z.string().uuid('Invalid agenda group ID'),
@@ -34,7 +36,8 @@ export const createAgendaItemSchema = z.object({
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative'),
     duration: z.number().int().positive('Duration must be positive').optional(),
-    type: z.enum(['DISCUSSION', 'PRESENTATION', 'DECISION', 'INFORMATION']).optional(),
+    type: z.enum(['STANDARD', 'DECISION', 'INFO']).optional(),
+    startTime: z.coerce.date(),
     agendaGroupId: z.string().uuid('Invalid agenda group ID'),
   }),
 });
@@ -45,8 +48,9 @@ export const updateAgendaItemSchema = z.object({
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative').optional(),
     duration: z.number().int().positive('Duration must be positive').optional(),
-    type: z.enum(['DISCUSSION', 'PRESENTATION', 'DECISION', 'INFORMATION']).optional(),
-    status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DEFERRED']).optional(),
+    type: z.enum(['STANDARD', 'DECISION', 'INFO']).optional(),
+    startTime: z.coerce.date().optional(),
+    status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED']).optional(),
   }),
   params: z.object({
     id: z.string().uuid('Invalid agenda item ID'),

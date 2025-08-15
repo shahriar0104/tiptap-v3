@@ -184,14 +184,19 @@ export class AuthMiddleware {
       if (!user) {
         throw new UnauthorizedError('Authentication required');
       }
-
-      if (!user.organizationId) {
-        throw new ForbiddenError('User must be part of an organization');
-      }
-
+      
+      // Organization membership will be checked at the service level if needed
+      // The user model no longer has organizationId directly
       next();
     } catch (error) {
       next(error);
     }
   };
 }
+
+// Export a function for easier use in routes
+export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  // This will be initialized by the container
+  const authMiddleware = (req as any).authMiddleware as AuthMiddleware;
+  return authMiddleware.authenticate(req, res, next);
+};

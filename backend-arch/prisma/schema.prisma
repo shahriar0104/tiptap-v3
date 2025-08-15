@@ -10,120 +10,217 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  firstName      String?
-  lastName       String?
-  role           UserRole @default(USER)
-  organizationId String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  boardMeetings  BoardMeeting[]
-  agendaGroups   AgendaGroup[]
-  agendaItems    AgendaItem[]
-
-  @@map("users")
-}
-
-model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  users         User[]
-  boardMeetings BoardMeeting[]
-
-  @@map("organizations")
-}
-
-model BoardMeeting {
-  id             String            @id @default(uuid())
-  title          String
-  description    String?
-  scheduledAt    DateTime
-  duration       Int? // Duration in minutes
-  location       String?
-  status         BoardMeetingStatus @default(SCHEDULED)
-  organizationId String
-  createdById    String
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User          @relation(fields: [createdById], references: [id])
-  agendaGroups AgendaGroup[]
-
-  @@map("board_meetings")
-}
-
-model AgendaGroup {
-  id             String   @id @default(uuid())
-  title          String
-  description    String?
-  order          Int
-  boardMeetingId String
-  createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  boardMeeting BoardMeeting @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
-  createdBy    User         @relation(fields: [createdById], references: [id])
-  agendaItems  AgendaItem[]
-
-  @@map("agenda_groups")
-}
-
-model AgendaItem {
-  id            String          @id @default(uuid())
-  title         String
-  description   String?
-  order         Int
-  duration      Int? // Duration in minutes
-  type          AgendaItemType  @default(DISCUSSION)
-  status        AgendaItemStatus @default(PENDING)
-  agendaGroupId String
-  createdById   String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  // Relations
-  agendaGroup AgendaGroup @relation(fields: [agendaGroupId], references: [id], onDelete: Cascade)
-  createdBy   User        @relation(fields: [createdById], references: [id])
-
-  @@map("agenda_items")
-}
-
+// ==========================
+// ENUMS
+// ==========================
 enum UserRole {
+  OWNER
   ADMIN
-  USER
+  MEMBER
+  VIEWER
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
 }
 
 enum BoardMeetingStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BoardMemberRole {
+  CHAIR
+  MEMBER
+  OBSERVER
 }
 
 enum AgendaItemType {
-  DISCUSSION
-  PRESENTATION
+  STANDARD
   DECISION
-  INFORMATION
+  INFO
 }
 
 enum AgendaItemStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
-  DEFERRED
+}
+
+enum DocumentRole {
+  CONTEXT
+  FIGURE
+  APPENDIX
+}
+
+enum SlideKind {
+  TITLE
+  SUMMARY
+  AGENDA_ITEM_SUMMARY
+  DETAIL
+}
+
+// ==========================
+// MODELS
+// ==========================
+model User {
+  id        String   @id @db.Uuid // matches Supabase auth.users.id
+  email     String   @unique
+  name      String?
+  avatar    String?  // Profile picture URL
+  role      UserRole @default(MEMBER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  OrgMember[]
+  boardMembers BoardMember[]
+  uploads      Upload[]
+
+  BoardMeeting BoardMeeting[]
+
+  Presentation Presentation[]
+}
+
+model Organization {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String     @unique
+  description String?
+  domain      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  members     OrgMember[]
+  meetings    BoardMeeting[]
+}
+
+model OrgMember {
+  id              String       @id @default(uuid()) @db.Uuid
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String      @db.Uuid
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String       @db.Uuid
+  role            OrgRole
+  joinedAt        DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+}
+
+model BoardMeeting {
+  id              String              @id @default(uuid()) @db.Uuid
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String            @db.Uuid
+  title           String
+  description     String?
+  status          BoardMeetingStatus  @default(DRAFT)
+  meetingDate     DateTime?
+  createdBy       User?               @relation(fields: [createdById], references: [id])
+  createdById     String?             @db.Uuid
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  members         BoardMember[]
+  agendaGroups    AgendaGroup[]
+  presentations   Presentation[]
+  contents        EditorContent[]
+}
+
+model BoardMember {
+  id             String           @id @default(uuid()) @db.Uuid
+  boardMeeting   BoardMeeting     @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
+  boardMeetingId String           @db.Uuid
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String           @db.Uuid
+  role           BoardMemberRole
+}
+
+model AgendaGroup {
+  id             String         @id @default(uuid()) @db.Uuid
+  boardMeeting   BoardMeeting   @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
+  boardMeetingId String         @db.Uuid
+  title          String
+  order          Int
+  startTime      DateTime       @db.Time
+  status         AgendaItemStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+
+  agendaItems    AgendaItem[]
+}
+
+model AgendaItem {
+  id            String           @id @default(uuid()) @db.Uuid
+  agendaGroup   AgendaGroup      @relation(fields: [agendaGroupId], references: [id], onDelete: Cascade)
+  agendaGroupId String           @db.Uuid
+  title         String
+  order         Int
+  startTime     DateTime         @db.Time
+  type          AgendaItemType   @default(STANDARD)
+  status        AgendaItemStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+
+  documents     AgendaItemDocument[]
+  Slide         Slide[]
+}
+
+model EditorContent {
+  id             String        @id @default(uuid()) @db.Uuid
+  boardMeeting   BoardMeeting  @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
+  boardMeetingId String        @db.Uuid
+  contentJson    Json           // Tiptap JSON for full meeting content
+  version        Int            @default(1)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Upload {
+  id           String   @id @default(uuid()) @db.Uuid
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  uploadedById String?  @db.Uuid
+  fileUrl      String
+  fileName     String
+  mimeType     String
+  createdAt    DateTime @default(now())
+
+  agendaDocs   AgendaItemDocument[]
+}
+
+model AgendaItemDocument {
+  id            String         @id @default(uuid()) @db.Uuid
+  agendaItem    AgendaItem     @relation(fields: [agendaItemId], references: [id], onDelete: Cascade)
+  agendaItemId  String         @db.Uuid
+  upload        Upload         @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  uploadId      String         @db.Uuid
+  role          DocumentRole   @default(CONTEXT)
+}
+
+// ==========================
+// PRESENTATION
+// ==========================
+model Presentation {
+  id              String       @id @default(uuid()) @db.Uuid
+  boardMeeting    BoardMeeting @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
+  boardMeetingId  String      @db.Uuid
+  createdBy       User?        @relation(fields: [createdById], references: [id])
+  createdById     String?      @db.Uuid
+  createdAt       DateTime     @default(now())
+
+  slides          Slide[]
+}
+
+model Slide {
+  id              String       @id @default(uuid()) @db.Uuid
+  presentation    Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  presentationId  String      @db.Uuid
+  agendaItem      AgendaItem?  @relation(fields: [agendaItemId], references: [id])
+  agendaItemId    String?      @db.Uuid
+  kind            SlideKind
+  title           String?
+  bodyJson        Json?        // JSON for slide content
+  orderIndex      Int
+  createdAt       DateTime     @default(now())
 }

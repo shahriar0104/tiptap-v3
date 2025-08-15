@@ -1,5 +1,5 @@
 import { UserModel } from '../userModel';
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 
 // Mock Prisma client
 jest.mock('../../config/database', () => ({
@@ -25,10 +25,10 @@ describe('UserModel', () => {
   const mockUser: User = {
     id: 'user-1',
     email: 'test@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    role: 'USER',
-    organizationId: 'org-1',
+    name: 'John Doe',
+    avatar: null,
+    role: UserRole.MEMBER,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -75,10 +75,11 @@ describe('UserModel', () => {
   describe('create', () => {
     it('should create user successfully', async () => {
       const createData = {
+        id: 'user-1',
         email: 'new@example.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        organizationId: 'org-1',
+        name: 'Jane Smith',
+        role: UserRole.MEMBER,
+        isActive: true,
       };
 
       mockPrisma.user.create.mockResolvedValue(mockUser);
@@ -87,7 +88,14 @@ describe('UserModel', () => {
 
       expect(result).toEqual(mockUser);
       expect(mockPrisma.user.create).toHaveBeenCalledWith({
-        data: createData,
+        data: {
+          id: createData.id,
+          email: createData.email,
+          name: createData.name,
+          avatar: null,
+          role: createData.role,
+          isActive: createData.isActive,
+        },
       });
     });
   });
@@ -95,11 +103,11 @@ describe('UserModel', () => {
   describe('update', () => {
     it('should update user successfully', async () => {
       const updateData = {
-        firstName: 'Jane',
-        lastName: 'Smith',
+        name: 'Jane Smith',
+        avatar: 'https://cdn.example.com/avatar.png',
       };
 
-      const updatedUser = { ...mockUser, ...updateData };
+      const updatedUser = { ...mockUser, ...updateData } as User;
       mockPrisma.user.update.mockResolvedValue(updatedUser);
 
       const result = await userModel.update('user-1', updateData);
@@ -114,14 +122,27 @@ describe('UserModel', () => {
 
   describe('findByOrganizationId', () => {
     it('should find users by organization id', async () => {
-      const orgUsers = [mockUser, { ...mockUser, id: 'user-2' }];
+      const orgUsers = [mockUser, { ...mockUser, id: 'user-2' } as User];
       mockPrisma.user.findMany.mockResolvedValue(orgUsers);
 
       const result = await userModel.findByOrganizationId('org-1');
 
       expect(result).toEqual(orgUsers);
       expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
-        where: { organizationId: 'org-1' },
+        where: {
+          memberships: {
+            some: {
+              organizationId: 'org-1',
+            },
+          },
+        },
+        include: {
+          memberships: {
+            where: {
+              organizationId: 'org-1',
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       });
     });

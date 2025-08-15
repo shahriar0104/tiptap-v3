@@ -1,7 +1,8 @@
 import { User } from '@prisma/client';
 import { supabase } from '../config/supabase';
 import { UserModel, OrganizationModel } from '../models';
-import { CreateUserData, SupabaseUser } from '../types';
+import { SupabaseUser } from '../types';
+import { CreateUserData as ModelCreateUserData } from '../models/userModel';
 import { UnauthorizedError, NotFoundError, ConflictError } from '../utils/errors';
 
 export class AuthService {
@@ -20,10 +21,11 @@ export class AuthService {
       
       if (!user) {
         // Create user if doesn't exist
-        const userData: CreateUserData = {
+        const userData: ModelCreateUserData = {
+          id: supabaseUser.user.id,
           email: supabaseUser.user.email ?? '',
-          firstName: supabaseUser.user.user_metadata?.['firstName'],
-          lastName: supabaseUser.user.user_metadata?.['lastName'],
+          name: supabaseUser.user.user_metadata?.['full_name'] || supabaseUser.user.email?.split('@')[0] || '',
+          avatar: supabaseUser.user.user_metadata?.['avatar_url'],
         };
         
         user = await this.userModel.create(userData);
@@ -55,11 +57,10 @@ export class AuthService {
 
       if (!user) {
         // Create user if doesn't exist (shouldn't happen for login, but safety check)
-        const userData: CreateUserData = {
+        const userData: ModelCreateUserData = {
           id: data.user.id,
           email: data.user.email!,
-          firstName: data.user.user_metadata?.['firstName'] || null,
-          lastName: data.user.user_metadata?.['lastName'] || null,
+          name: data.user.user_metadata?.['full_name'] || data.user.email?.split('@')[0] || '',
           role: 'MEMBER',
         };
         
@@ -90,7 +91,7 @@ export class AuthService {
 
   async updateUserProfile(
     userId: string, 
-    data: Partial<CreateUserData>
+    data: Partial<ModelCreateUserData>
   ): Promise<User> {
     const existingUser = await this.userModel.findById(userId);
     
@@ -124,10 +125,10 @@ export class AuthService {
       }
     }
 
-    const userData: CreateUserData = {
+    const userData: ModelCreateUserData = {
+      id: supabaseUser.id,
       email: supabaseUser.email ?? '',
-      firstName: supabaseUser.user_metadata?.['firstName'] || '',
-      lastName: supabaseUser.user_metadata?.['lastName'] || '',
+      name: (supabaseUser.user_metadata as any)?.['full_name'] || supabaseUser.email?.split('@')[0] || '',
     };
 
     return this.userModel.create(userData);
@@ -164,11 +165,10 @@ export class AuthService {
 
     if (!user) {
       // Create new user from Google OAuth data
-      const userData = {
+      const userData: ModelCreateUserData = {
         id: data.user.id,
         email: data.user.email!,
-        firstName: data.user.user_metadata?.['full_name']?.split(' ')[0] || null,
-        lastName: data.user.user_metadata?.['full_name']?.split(' ').slice(1).join(' ') || null,
+        name: data.user.user_metadata?.['full_name'] || data.user.email?.split('@')[0] || '',
         role: 'MEMBER' as const,
       };
 
@@ -216,16 +216,15 @@ export class AuthService {
       // 2. Create organization using model
       organization = await this.organizationModel.create({
         name: data.organizationName,
+        slug: data.organizationName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
       });
 
       // 3. Create admin user using model
       const user = await this.userModel.create({
         id: supabaseUser.id,
         email: data.adminEmail,
-        firstName: data.adminFirstName,
-        lastName: data.adminLastName,
+        name: `${data.adminFirstName} ${data.adminLastName}`,
         role: 'ADMIN',
-        organizationId: organization.id,
       });
 
       // 4. Update Supabase user metadata with organization ID

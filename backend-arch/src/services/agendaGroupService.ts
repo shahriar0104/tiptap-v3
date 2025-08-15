@@ -1,6 +1,6 @@
-import { AgendaGroup, Prisma } from '@prisma/client';
-import { AgendaGroupModel } from '../models/agendaGroupModel';
-import { BoardMeetingModel } from '../models/boardMeetingModel';
+import { Prisma } from '@prisma/client';
+import type { AgendaGroupModel } from '../models/agendaGroupModel';
+import type { BoardMeetingModel } from '../models/boardMeetingModel';
 import { CreateAgendaGroupData, UpdateAgendaGroupData } from '../types';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/errors';
 
@@ -13,30 +13,38 @@ type AgendaGroupWithRelations = Prisma.AgendaGroupGetPayload<{
         organizationId: true;
       };
     };
-    createdBy: {
-      select: {
-        id: true;
-        email: true;
-        firstName: true;
-        lastName: true;
-      };
-    };
     agendaItems: {
-      include: {
-        createdBy: {
-          select: {
-            id: true;
-            email: true;
-            firstName: true;
-            lastName: true;
-          };
-        };
+      orderBy: {
+        order: 'asc';
       };
     };
   };
 }>;
 
-export class AgendaGroupService {
+export interface AgendaGroupService {
+  createAgendaGroup(
+    data: CreateAgendaGroupData,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations>;
+  getAgendaGroupById(id: string, userOrganizationId?: string): Promise<AgendaGroupWithRelations | null>;
+  getAgendaGroupsByBoardMeetingId(
+    boardMeetingId: string,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations[]>;
+  updateAgendaGroup(
+    id: string,
+    data: UpdateAgendaGroupData,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations | null>;
+  deleteAgendaGroup(id: string, userOrganizationId?: string): Promise<void>;
+  reorderAgendaGroups(
+    boardMeetingId: string,
+    groupOrders: Array<{ id: string; order: number }>,
+    userOrganizationId?: string
+  ): Promise<void>;
+}
+
+export class AgendaGroupServiceImpl implements AgendaGroupService {
   constructor(
     private agendaGroupModel: AgendaGroupModel,
     private boardMeetingModel: BoardMeetingModel
@@ -44,9 +52,8 @@ export class AgendaGroupService {
 
   async createAgendaGroup(
     data: CreateAgendaGroupData,
-    createdById: string,
     userOrganizationId?: string
-  ): Promise<AgendaGroup> {
+  ): Promise<AgendaGroupWithRelations> {
     // Verify the board meeting exists and user has access
     const boardMeeting = await this.boardMeetingModel.findById(data.boardMeetingId);
     
@@ -64,7 +71,7 @@ export class AgendaGroupService {
       data.order = maxOrder + 1;
     }
 
-    return this.agendaGroupModel.create(data, createdById);
+    return this.agendaGroupModel.create(data);
   }
 
   async getAgendaGroupById(id: string, userOrganizationId?: string): Promise<AgendaGroupWithRelations | null> {

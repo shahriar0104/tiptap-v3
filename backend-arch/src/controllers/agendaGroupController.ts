@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AgendaGroupService } from '../services/agendaGroupService';
+import type { AgendaGroupService } from '../services/agendaGroupService';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess } from '../utils/response';
 import { 
@@ -18,7 +18,6 @@ export class AgendaGroupController {
 
       const agendaGroup = await this.agendaGroupService.createAgendaGroup(
         data,
-        user.id,
         user.organizationId || undefined
       );
       sendSuccess(res, agendaGroup, 'Agenda group created successfully', 201);

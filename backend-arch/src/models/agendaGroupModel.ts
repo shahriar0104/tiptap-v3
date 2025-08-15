@@ -1,40 +1,35 @@
-import { Prisma, AgendaGroup } from '@prisma/client';
-import prisma from '../config/database';
+import { PrismaClient, Prisma, AgendaGroup } from '@prisma/client';
 import { CreateAgendaGroupData, UpdateAgendaGroupData } from '../types';
 
 type AgendaGroupWithRelations = Prisma.AgendaGroupGetPayload<{
   include: {
     boardMeeting: {
       select: {
-        id: true;
-        title: true;
-        organizationId: true;
-      };
-    };
-    createdBy: {
-      select: {
-        id: true;
-        email: true;
-        firstName: true;
-        lastName: true;
-      };
-    };
+        id: true,
+        title: true,
+        organizationId: true,
+      },
+    },
     agendaItems: {
-      include: {
-        createdBy: {
-          select: {
-            id: true;
-            email: true;
-            firstName: true;
-            lastName: true;
-          };
-        };
-      };
-    };
-  };
+      orderBy: { order: 'asc' },
+    },
+  },
 }>;
 
-export class AgendaGroupModel {
+export interface AgendaGroupModel {
+  findById(id: string): Promise<AgendaGroupWithRelations | null>;
+  findByBoardMeetingId(boardMeetingId: string): Promise<AgendaGroupWithRelations[]>;
+  create(data: CreateAgendaGroupData): Promise<AgendaGroupWithRelations>;
+  update(id: string, data: UpdateAgendaGroupData): Promise<AgendaGroupWithRelations>;
+  delete(id: string): Promise<AgendaGroup>;
+  reorder(updates: Array<{ id: string; order: number }>): Promise<void>;
+  reorderGroups(boardMeetingId: string, updates: Array<{ id: string; order: number }>): Promise<void>;
+  getMaxOrder(boardMeetingId: string): Promise<number>;
+}
+
+export class AgendaGroupModelImpl implements AgendaGroupModel {
+  constructor(private prisma: PrismaClient) {}
+
   async findById(id: string): Promise<AgendaGroupWithRelations | null> {
     const findByIdValidator = Prisma.validator<Prisma.AgendaGroupFindUniqueArgs>()({
       where: { id },
@@ -46,31 +41,13 @@ export class AgendaGroupModel {
             organizationId: true,
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
         agendaItems: {
           orderBy: { order: 'asc' },
-          include: {
-            createdBy: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
         },
       },
     });
 
-    return prisma.agendaGroup.findUnique(findByIdValidator);
+    return this.prisma.agendaGroup.findUnique(findByIdValidator);
   }
 
   async findByBoardMeetingId(boardMeetingId: string): Promise<AgendaGroupWithRelations[]> {
@@ -84,42 +61,23 @@ export class AgendaGroupModel {
             organizationId: true,
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
         agendaItems: {
           orderBy: { order: 'asc' },
-          include: {
-            createdBy: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
         },
       },
       orderBy: { order: 'asc' },
     });
 
-    return prisma.agendaGroup.findMany(findManyValidator);
+    return this.prisma.agendaGroup.findMany(findManyValidator);
   }
 
-  async create(data: CreateAgendaGroupData, createdById: string): Promise<AgendaGroup> {
+  async create(data: CreateAgendaGroupData): Promise<AgendaGroupWithRelations> {
     const createValidator = Prisma.validator<Prisma.AgendaGroupCreateArgs>()({
       data: {
         title: data.title,
-        description: data.description || null,
         order: data.order,
+        startTime: data.startTime,
         boardMeetingId: data.boardMeetingId,
-        createdById,
       },
       include: {
         boardMeeting: {
@@ -129,26 +87,21 @@ export class AgendaGroupModel {
             organizationId: true,
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
+        agendaItems: {
+          orderBy: { order: 'asc' },
         },
       },
     });
 
-    return prisma.agendaGroup.create(createValidator);
+    return this.prisma.agendaGroup.create(createValidator);
   }
 
   async update(id: string, data: UpdateAgendaGroupData): Promise<AgendaGroupWithRelations> {
     const updateData: Prisma.AgendaGroupUpdateInput = {};
-    
+
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) updateData.description = data.description;
     if (data.order !== undefined) updateData.order = data.order;
+    if (data.startTime !== undefined) updateData.startTime = data.startTime;
 
     const updateValidator = Prisma.validator<Prisma.AgendaGroupUpdateArgs>()({
       where: { id },
@@ -161,46 +114,37 @@ export class AgendaGroupModel {
             organizationId: true,
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
         agendaItems: {
           orderBy: { order: 'asc' },
-          include: {
-            createdBy: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
         },
       },
     });
 
-    return prisma.agendaGroup.update(updateValidator);
+    return this.prisma.agendaGroup.update(updateValidator);
   }
 
   async delete(id: string): Promise<AgendaGroup> {
-    const deleteValidator = Prisma.validator<Prisma.AgendaGroupDeleteArgs>()({
+    return this.prisma.agendaGroup.delete({
       where: { id },
     });
-
-    return prisma.agendaGroup.delete(deleteValidator);
   }
 
-  async reorderGroups(boardMeetingId: string, groupOrders: Array<{ id: string; order: number }>): Promise<void> {
-    await prisma.$transaction(
-      groupOrders.map(({ id, order }) =>
-        prisma.agendaGroup.update({
-          where: { id, boardMeetingId },
+  async reorder(updates: Array<{ id: string; order: number }>): Promise<void> {
+    await this.prisma.$transaction(
+      updates.map(({ id, order }) =>
+        this.prisma.agendaGroup.update({
+          where: { id },
+          data: { order },
+        })
+      )
+    );
+  }
+
+  async reorderGroups(_boardMeetingId: string, updates: Array<{ id: string; order: number }>): Promise<void> {
+    await this.prisma.$transaction(
+      updates.map(({ id, order }) =>
+        this.prisma.agendaGroup.update({
+          where: { id },
           data: { order },
         })
       )
@@ -208,7 +152,7 @@ export class AgendaGroupModel {
   }
 
   async getMaxOrder(boardMeetingId: string): Promise<number> {
-    const result = await prisma.agendaGroup.aggregate({
+    const result = await this.prisma.agendaGroup.aggregate({
       where: { boardMeetingId },
       _max: { order: true },
     });

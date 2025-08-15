@@ -1,14 +1,57 @@
-import { Prisma, User } from '@prisma/client';
-import prisma from '../config/database';
-import { CreateUserData } from '../types';
+import { PrismaClient, Prisma, User, UserRole } from '@prisma/client';
 
-export class UserModel {
+export interface CreateUserData {
+  id?: string;
+  email: string;
+  name?: string;
+  avatar?: string;
+  role?: UserRole;
+  isActive?: boolean;
+}
+
+export interface UpdateUserData {
+  email?: string;
+  name?: string;
+  avatar?: string;
+  role?: UserRole;
+  isActive?: boolean;
+}
+
+export interface UserModel {
+  findById(id: string): Promise<User | null>;
+  findByIdWithMemberships(id: string): Promise<(User & { memberships: any[] }) | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(data: CreateUserData): Promise<User>;
+  update(id: string, data: UpdateUserData): Promise<User>;
+  delete(id: string): Promise<User>;
+  findByOrganizationId(organizationId: string): Promise<User[]>;
+  findActiveUsers(): Promise<User[]>;
+}
+
+export class UserModelImpl implements UserModel {
+  constructor(private prisma: PrismaClient) {}
+
   async findById(id: string): Promise<User | null> {
     const findByIdValidator = Prisma.validator<Prisma.UserFindUniqueArgs>()({
       where: { id },
     });
 
-    return prisma.user.findUnique(findByIdValidator);
+    return this.prisma.user.findUnique(findByIdValidator);
+  }
+
+  async findByIdWithMemberships(id: string): Promise<(User & { memberships: any[] }) | null> {
+    const findByIdValidator = Prisma.validator<Prisma.UserFindUniqueArgs>()({
+      where: { id },
+      include: {
+        memberships: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    return this.prisma.user.findUnique(findByIdValidator);
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -16,35 +59,39 @@ export class UserModel {
       where: { email },
     });
 
-    return prisma.user.findUnique(findByEmailValidator);
+    return this.prisma.user.findUnique(findByEmailValidator);
   }
 
   async create(data: CreateUserData): Promise<User> {
     const createValidator = Prisma.validator<Prisma.UserCreateArgs>()({
       data: {
+        id: data.id!,
         email: data.email,
-        firstName: data.firstName || null,
-        lastName: data.lastName || null,
-        organizationId: data.organizationId || null,
+        name: data.name ?? null,
+        avatar: data.avatar ?? null,
+        role: data.role!,
+        isActive: data.isActive!,
       },
     });
 
-    return prisma.user.create(createValidator);
+    return this.prisma.user.create(createValidator);
   }
 
-  async update(id: string, data: Partial<CreateUserData>): Promise<User> {
+  async update(id: string, data: UpdateUserData): Promise<User> {
     const updateData: Record<string, unknown> = {};
     
-    if (data.firstName !== undefined) updateData['firstName'] = data.firstName;
-    if (data.lastName !== undefined) updateData['lastName'] = data.lastName;
-    if (data.organizationId !== undefined) updateData['organizationId'] = data.organizationId;
+    if (data.email !== undefined) updateData['email'] = data.email;
+    if (data.name !== undefined) updateData['name'] = data.name;
+    if (data.avatar !== undefined) updateData['avatar'] = data.avatar;
+    if (data.role !== undefined) updateData['role'] = data.role;
+    if (data.isActive !== undefined) updateData['isActive'] = data.isActive;
 
     const updateValidator = Prisma.validator<Prisma.UserUpdateArgs>()({
       where: { id },
       data: updateData as Prisma.UserUpdateInput,
     });
 
-    return prisma.user.update(updateValidator);
+    return this.prisma.user.update(updateValidator);
   }
 
   async delete(id: string): Promise<User> {
@@ -52,15 +99,37 @@ export class UserModel {
       where: { id },
     });
 
-    return prisma.user.delete(deleteValidator);
+    return this.prisma.user.delete(deleteValidator);
   }
 
   async findByOrganizationId(organizationId: string): Promise<User[]> {
     const findManyValidator = Prisma.validator<Prisma.UserFindManyArgs>()({
-      where: { organizationId },
+      where: {
+        memberships: {
+          some: {
+            organizationId: organizationId,
+          },
+        },
+      },
+      include: {
+        memberships: {
+          where: {
+            organizationId: organizationId,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    return prisma.user.findMany(findManyValidator);
+    return this.prisma.user.findMany(findManyValidator);
+  }
+
+  async findActiveUsers(): Promise<User[]> {
+    const findManyValidator = Prisma.validator<Prisma.UserFindManyArgs>()({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return this.prisma.user.findMany(findManyValidator);
   }
 }

@@ -1,10 +1,12 @@
 import { AuthService } from '../authService';
 import { UserModel } from '../../models/userModel';
+import { OrganizationModel } from '../../models/organizationModel';
 import { NotFoundError, ConflictError } from '../../utils/errors';
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 
 // Mock the UserModel
 jest.mock('../../models/userModel');
+jest.mock('../../models/organizationModel');
 jest.mock('../../config/supabase', () => ({
   supabase: {
     auth: {
@@ -14,25 +16,28 @@ jest.mock('../../config/supabase', () => ({
 }));
 
 const MockedUserModel = UserModel as jest.MockedClass<typeof UserModel>;
+const MockedOrganizationModel = OrganizationModel as jest.MockedClass<typeof OrganizationModel>;
 
 describe('AuthService', () => {
   let authService: AuthService;
   let mockUserModel: jest.Mocked<UserModel>;
+  let mockOrganizationModel: jest.Mocked<OrganizationModel>;
 
   const mockUser: User = {
     id: 'user-1',
     email: 'test@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    role: 'USER',
-    organizationId: 'org-1',
+    name: 'John Doe',
+    avatar: null,
+    role: UserRole.MEMBER,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(() => {
     mockUserModel = new MockedUserModel() as jest.Mocked<UserModel>;
-    authService = new AuthService(mockUserModel);
+    mockOrganizationModel = new MockedOrganizationModel() as jest.Mocked<OrganizationModel>;
+    authService = new AuthService(mockUserModel, mockOrganizationModel);
     jest.clearAllMocks();
   });
 
@@ -56,7 +61,7 @@ describe('AuthService', () => {
 
   describe('updateUserProfile', () => {
     it('should update user profile successfully', async () => {
-      const updateData = { firstName: 'Jane', lastName: 'Smith' };
+      const updateData = { name: 'Jane Smith' };
       const updatedUser = { ...mockUser, ...updateData };
 
       mockUserModel.findById.mockResolvedValue(mockUser);
@@ -73,7 +78,7 @@ describe('AuthService', () => {
       mockUserModel.findById.mockResolvedValue(null);
 
       await expect(
-        authService.updateUserProfile('user-1', { firstName: 'Jane' })
+        authService.updateUserProfile('user-1', { name: 'Jane' })
       ).rejects.toThrow(NotFoundError);
     });
 

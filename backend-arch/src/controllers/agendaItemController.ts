@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AgendaItemService } from '../services/agendaItemService';
+import type { AgendaItemService } from '../services/agendaItemService';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess } from '../utils/response';
 import { 
@@ -18,7 +18,6 @@ export class AgendaItemController {
 
       const agendaItem = await this.agendaItemService.createAgendaItem(
         data,
-        user.id,
         user.organizationId || undefined
       );
       sendSuccess(res, agendaItem, 'Agenda item created successfully', 201);
@@ -102,7 +101,7 @@ export class AgendaItemController {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetAgendaItemParams;
-      const { status } = req.body as { status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DEFERRED' };
+      const { status } = req.body as { status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' };
 
       const agendaItem = await this.agendaItemService.updateAgendaItemStatus(
         id,
