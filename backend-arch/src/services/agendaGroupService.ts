@@ -1,8 +1,11 @@
 import { Prisma } from '@prisma/client';
-import type { AgendaGroupModel } from '../models/agendaGroupModel';
-import type { BoardMeetingModel } from '../models/boardMeetingModel';
+import { withModels, withTransactionModels } from '../utils/transaction';
 import { CreateAgendaGroupData, UpdateAgendaGroupData } from '../types';
-import { NotFoundError, ForbiddenError, ValidationError } from '../utils/errors';
+import {
+  NotFoundError,
+  ForbiddenError,
+  ValidationError,
+} from '../utils/errors';
 
 type AgendaGroupWithRelations = Prisma.AgendaGroupGetPayload<{
   include: {
@@ -26,7 +29,10 @@ export interface AgendaGroupService {
     data: CreateAgendaGroupData,
     userOrganizationId?: string
   ): Promise<AgendaGroupWithRelations>;
-  getAgendaGroupById(id: string, userOrganizationId?: string): Promise<AgendaGroupWithRelations | null>;
+  getAgendaGroupById(
+    id: string,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations | null>;
   getAgendaGroupsByBoardMeetingId(
     boardMeetingId: string,
     userOrganizationId?: string
@@ -45,93 +51,134 @@ export interface AgendaGroupService {
 }
 
 export class AgendaGroupServiceImpl implements AgendaGroupService {
-  constructor(
-    private agendaGroupModel: AgendaGroupModel,
-    private boardMeetingModel: BoardMeetingModel
-  ) {}
+  constructor() {}
 
   async createAgendaGroup(
     data: CreateAgendaGroupData,
     userOrganizationId?: string
   ): Promise<AgendaGroupWithRelations> {
-    // Verify the board meeting exists and user has access
-    const boardMeeting = await this.boardMeetingModel.findById(data.boardMeetingId);
-    
-    if (!boardMeeting) {
-      throw new NotFoundError('Board meeting not found');
-    }
+    return withTransactionModels(async ({ models }) => {
+      // Verify the board meeting exists and user has access
+      const boardMeeting = await models.boardMeetingModel.findById(
+        data.boardMeetingId
+      );
 
-    if (userOrganizationId && boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this board meeting');
-    }
+      if (!boardMeeting) {
+        throw new NotFoundError('Board meeting not found');
+      }
 
-    // If no order specified, set it to the next available order
-    if (data.order === undefined || data.order < 0) {
-      const maxOrder = await this.agendaGroupModel.getMaxOrder(data.boardMeetingId);
-      data.order = maxOrder + 1;
-    }
+      if (
+        userOrganizationId &&
+        boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this board meeting');
+      }
 
-    return this.agendaGroupModel.create(data);
+      // If no order specified, set it to the next available order
+      if (data.order === undefined || data.order < 0) {
+        const maxOrder = await models.agendaGroupModel.getMaxOrder(
+          data.boardMeetingId
+        );
+        data.order = maxOrder + 1;
+      }
+
+      return models.agendaGroupModel.create(data);
+    });
   }
 
-  async getAgendaGroupById(id: string, userOrganizationId?: string): Promise<AgendaGroupWithRelations | null> {
-    const agendaGroup = await this.agendaGroupModel.findById(id);
-    
-    if (!agendaGroup) {
-      throw new NotFoundError('Agenda group not found');
-    }
+  async getAgendaGroupById(
+    id: string,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations | null> {
+    return withModels(async ({ models }) => {
+      const agendaGroup = await models.agendaGroupModel.findById(id);
 
-    // Check if user has access to this agenda group
-    if (userOrganizationId && agendaGroup.boardMeeting && agendaGroup.boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this agenda group');
-    }
+      if (!agendaGroup) {
+        throw new NotFoundError('Agenda group not found');
+      }
 
-    return agendaGroup;
+      // Check if user has access to this agenda group
+      if (
+        userOrganizationId &&
+        agendaGroup.boardMeeting &&
+        agendaGroup.boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this agenda group');
+      }
+
+      return agendaGroup;
+    });
   }
 
-  async getAgendaGroupsByBoardMeetingId(boardMeetingId: string, userOrganizationId?: string): Promise<AgendaGroupWithRelations[]> {
-    // Verify the board meeting exists and user has access
-    const boardMeeting = await this.boardMeetingModel.findById(boardMeetingId);
-    
-    if (!boardMeeting) {
-      throw new NotFoundError('Board meeting not found');
-    }
+  async getAgendaGroupsByBoardMeetingId(
+    boardMeetingId: string,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations[]> {
+    return withModels(async ({ models }) => {
+      // Verify the board meeting exists and user has access
+      const boardMeeting =
+        await models.boardMeetingModel.findById(boardMeetingId);
 
-    if (userOrganizationId && boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this board meeting');
-    }
+      if (!boardMeeting) {
+        throw new NotFoundError('Board meeting not found');
+      }
 
-    return this.agendaGroupModel.findByBoardMeetingId(boardMeetingId);
+      if (
+        userOrganizationId &&
+        boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this board meeting');
+      }
+
+      return models.agendaGroupModel.findByBoardMeetingId(boardMeetingId);
+    });
   }
 
-  async updateAgendaGroup(id: string, data: UpdateAgendaGroupData, userOrganizationId?: string): Promise<AgendaGroupWithRelations | null> {
-    const existingGroup = await this.agendaGroupModel.findById(id);
-    
-    if (!existingGroup) {
-      throw new NotFoundError('Agenda group not found');
-    }
+  async updateAgendaGroup(
+    id: string,
+    data: UpdateAgendaGroupData,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations | null> {
+    return withTransactionModels(async ({ models }) => {
+      const existingGroup = await models.agendaGroupModel.findById(id);
 
-    // Check if user has access to this agenda group
-    if (userOrganizationId && existingGroup.boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this agenda group');
-    }
+      if (!existingGroup) {
+        throw new NotFoundError('Agenda group not found');
+      }
 
-    return this.agendaGroupModel.update(id, data);
+      // Check if user has access to this agenda group
+      if (
+        userOrganizationId &&
+        existingGroup.boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this agenda group');
+      }
+
+      return models.agendaGroupModel.update(id, data);
+    });
   }
 
-  async deleteAgendaGroup(id: string, userOrganizationId?: string): Promise<void> {
-    const existingGroup = await this.agendaGroupModel.findById(id);
-    
-    if (!existingGroup) {
-      throw new NotFoundError('Agenda group not found');
-    }
+  async deleteAgendaGroup(
+    id: string,
+    userOrganizationId?: string
+  ): Promise<void> {
+    return withTransactionModels(async ({ models }) => {
+      const existingGroup = await models.agendaGroupModel.findById(id);
 
-    // Check if user has access to this agenda group
-    if (userOrganizationId && existingGroup.boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this agenda group');
-    }
+      if (!existingGroup) {
+        throw new NotFoundError('Agenda group not found');
+      }
 
-    await this.agendaGroupModel.delete(id);
+      // Check if user has access to this agenda group
+      if (
+        userOrganizationId &&
+        existingGroup.boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this agenda group');
+      }
+
+      await models.agendaGroupModel.delete(id);
+    });
   }
 
   async reorderAgendaGroups(
@@ -139,35 +186,48 @@ export class AgendaGroupServiceImpl implements AgendaGroupService {
     groupOrders: Array<{ id: string; order: number }>,
     userOrganizationId?: string
   ): Promise<void> {
-    // Verify the board meeting exists and user has access
-    const boardMeeting = await this.boardMeetingModel.findById(boardMeetingId);
-    
-    if (!boardMeeting) {
-      throw new NotFoundError('Board meeting not found');
-    }
+    return withTransactionModels(async ({ models }) => {
+      // Verify the board meeting exists and user has access
+      const boardMeeting =
+        await models.boardMeetingModel.findById(boardMeetingId);
 
-    if (userOrganizationId && boardMeeting.organizationId !== userOrganizationId) {
-      throw new ForbiddenError('Access denied to this board meeting');
-    }
-
-    // Validate that all groups belong to the board meeting
-    const existingGroups = await this.agendaGroupModel.findByBoardMeetingId(boardMeetingId);
-    const existingGroupIds = new Set(existingGroups.map(g => g.id));
-
-    for (const { id } of groupOrders) {
-      if (!existingGroupIds.has(id)) {
-        throw new ValidationError(`Agenda group ${id} does not belong to this board meeting`);
+      if (!boardMeeting) {
+        throw new NotFoundError('Board meeting not found');
       }
-    }
 
-    // Validate orders are sequential and start from 0
-    const sortedOrders = groupOrders.map(g => g.order).sort((a, b) => a - b);
-    for (let i = 0; i < sortedOrders.length; i++) {
-      if (sortedOrders[i] !== i) {
-        throw new ValidationError('Orders must be sequential starting from 0');
+      if (
+        userOrganizationId &&
+        boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this board meeting');
       }
-    }
 
-    await this.agendaGroupModel.reorderGroups(boardMeetingId, groupOrders);
+      // Validate that all groups belong to the board meeting
+      const existingGroups =
+        await models.agendaGroupModel.findByBoardMeetingId(boardMeetingId);
+      const existingGroupIds = new Set(
+        existingGroups.map((g: { id: string }) => g.id)
+      );
+
+      for (const { id } of groupOrders) {
+        if (!existingGroupIds.has(id)) {
+          throw new ValidationError(
+            `Agenda group ${id} does not belong to this board meeting`
+          );
+        }
+      }
+
+      // Validate orders are sequential and start from 0
+      const sortedOrders = groupOrders.map(g => g.order).sort((a, b) => a - b);
+      for (let i = 0; i < sortedOrders.length; i++) {
+        if (sortedOrders[i] !== i) {
+          throw new ValidationError(
+            'Orders must be sequential starting from 0'
+          );
+        }
+      }
+
+      await models.agendaGroupModel.reorderGroups(boardMeetingId, groupOrders);
+    });
   }
 }

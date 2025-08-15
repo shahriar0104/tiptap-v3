@@ -10,7 +10,9 @@ import {
   createVersionSchema,
 } from '../validators/editorContent';
 
-export function createEditorContentRoutes(editorContentController: EditorContentController): Router {
+export function createEditorContentRoutes(
+  editorContentController: EditorContentController
+): Router {
   const router = Router();
 
   // Apply authentication to all editor content routes
@@ -50,7 +52,11 @@ export function createEditorContentRoutes(editorContentController: EditorContent
    *             schema:
    *               $ref: '#/components/schemas/ApiResponse'
    */
-  router.post('/', validateRequest({ body: createEditorContentSchema }), editorContentController.createEditorContent);
+  router.post(
+    '/',
+    validateRequest({ body: createEditorContentSchema }),
+    editorContentController.createEditorContent
+  );
 
   // GET /editor-content/:id - Get editor content by ID
   /**
@@ -76,7 +82,11 @@ export function createEditorContentRoutes(editorContentController: EditorContent
    *       404:
    *         description: Not found
    */
-  router.get('/:id', validateRequest({ params: getEditorContentParamsSchema }), editorContentController.getEditorContent);
+  router.get(
+    '/:id',
+    validateRequest({ params: getEditorContentParamsSchema }),
+    editorContentController.getEditorContent
+  );
 
   // PUT /editor-content/:id - Update editor content
   /**
@@ -114,9 +124,9 @@ export function createEditorContentRoutes(editorContentController: EditorContent
    */
   router.put(
     '/:id',
-    validateRequest({ 
+    validateRequest({
       params: getEditorContentParamsSchema,
-      body: updateEditorContentSchema 
+      body: updateEditorContentSchema,
     }),
     editorContentController.updateEditorContent
   );
@@ -227,9 +237,9 @@ export function createEditorContentRoutes(editorContentController: EditorContent
    */
   router.post(
     '/board-meeting/:boardMeetingId/version',
-    validateRequest({ 
+    validateRequest({
       params: getBoardMeetingParamsSchema,
-      body: createVersionSchema 
+      body: createVersionSchema,
     }),
     editorContentController.createNewVersion
   );

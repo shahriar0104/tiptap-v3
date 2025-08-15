@@ -1,102 +1,17 @@
 import { Router } from 'express';
 import { container } from '../container';
 import { validateRequest } from '../middlewares';
-import { 
-  createBoardMeetingSchema, 
-  updateBoardMeetingSchema, 
+import {
+  createBoardMeetingSchema,
+  updateBoardMeetingSchema,
   getBoardMeetingSchema,
-  getBoardMeetingsSchema 
+  getBoardMeetingsSchema,
 } from '../validators/boardMeeting';
 
 const router = Router();
 const { boardMeetingController, authMiddleware } = container;
 
-/**
- * @swagger
- * /api/board-meetings/organization:
- *   post:
- *     summary: Create organization with admin user and initial board meeting
- *     description: Creates a new organization, admin user, and initial board meeting in a single transaction
- *     tags: [Board Meetings]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - organizationName
- *               - adminEmail
- *               - adminPassword
- *               - adminFirstName
- *               - adminLastName
- *               - boardMeetingTitle
- *               - boardMeetingScheduledAt
- *             properties:
- *               organizationName:
- *                 type: string
- *                 example: Acme Corporation
- *               adminEmail:
- *                 type: string
- *                 format: email
- *                 example: admin@acme.com
- *               adminPassword:
- *                 type: string
- *                 minLength: 6
- *                 example: password123
- *               adminFirstName:
- *                 type: string
- *                 example: John
- *               adminLastName:
- *                 type: string
- *                 example: Doe
- *               boardMeetingTitle:
- *                 type: string
- *                 example: Initial Board Meeting
- *               boardMeetingDescription:
- *                 type: string
- *                 example: First meeting to establish the organization
- *               boardMeetingScheduledAt:
- *                 type: string
- *                 format: date-time
- *                 example: 2023-12-15T14:00:00Z
- *               boardMeetingDuration:
- *                 type: integer
- *                 example: 120
- *               boardMeetingLocation:
- *                 type: string
- *                 example: Conference Room A
- *     responses:
- *       201:
- *         description: Organization and board meeting created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Organization and board meeting created successfully
- *                 data:
- *                   type: object
- *                   properties:
- *                     organization:
- *                       $ref: '#/components/schemas/Organization'
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     boardMeeting:
- *                       $ref: '#/components/schemas/BoardMeeting'
- *       400:
- *         description: Invalid input data
- *       409:
- *         description: Organization or user already exists
- *       500:
- *         description: Internal server error
- */
-router.post('/organization', boardMeetingController.createOrganizationWithBoardMeeting);
+// Organization-related endpoints moved to organizationRoutes.ts
 
 // Routes below require organization membership
 router.use(authMiddleware.requireOrganization);
@@ -157,7 +72,8 @@ router.use(authMiddleware.requireOrganization);
  *       401:
  *         description: Authentication required
  */
-router.post('/', 
+router.post(
+  '/',
   validateRequest(createBoardMeetingSchema),
   boardMeetingController.createBoardMeeting
 );
@@ -204,38 +120,13 @@ router.post('/',
  *       401:
  *         description: Authentication required
  */
-router.get('/', 
+router.get(
+  '/',
   validateRequest(getBoardMeetingsSchema),
   boardMeetingController.getBoardMeetings
 );
 
-/**
- * @swagger
- * /api/board-meetings/organization:
- *   get:
- *     summary: Get organization meetings
- *     description: Retrieve all board meetings for the authenticated user's organization
- *     tags: [Board Meetings]
- *     responses:
- *       200:
- *         description: Organization meetings retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/BoardMeeting'
- *       401:
- *         description: Authentication required
- */
-router.get('/organization', 
-  boardMeetingController.getOrganizationMeetings
-);
+// Organization-related endpoints moved to organizationRoutes.ts
 
 /**
  * @swagger
@@ -271,7 +162,8 @@ router.get('/organization',
  *       401:
  *         description: Authentication required
  */
-router.get('/:id', 
+router.get(
+  '/:id',
   validateRequest(getBoardMeetingSchema),
   boardMeetingController.getBoardMeeting
 );
@@ -339,7 +231,8 @@ router.get('/:id',
  *       401:
  *         description: Authentication required
  */
-router.put('/:id', 
+router.put(
+  '/:id',
   validateRequest(updateBoardMeetingSchema),
   boardMeetingController.updateBoardMeeting
 );
@@ -375,7 +268,8 @@ router.put('/:id',
  *       401:
  *         description: Authentication required
  */
-router.delete('/:id', 
+router.delete(
+  '/:id',
   validateRequest(getBoardMeetingSchema),
   boardMeetingController.deleteBoardMeeting
 );
@@ -429,7 +323,8 @@ router.delete('/:id',
  *       401:
  *         description: Authentication required
  */
-router.patch('/:id/status', 
+router.patch(
+  '/:id/status',
   validateRequest(getBoardMeetingSchema),
   boardMeetingController.updateMeetingStatus
 );

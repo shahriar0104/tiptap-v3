@@ -13,7 +13,11 @@ export const createAgendaGroupSchema = z.object({
 
 export const updateAgendaGroupSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Title is required').max(255, 'Title too long').optional(),
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(255, 'Title too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative').optional(),
     startTime: z.coerce.date().optional(),
@@ -44,7 +48,11 @@ export const createAgendaItemSchema = z.object({
 
 export const updateAgendaItemSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Title is required').max(255, 'Title too long').optional(),
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(255, 'Title too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
     order: z.number().int().min(0, 'Order must be non-negative').optional(),
     duration: z.number().int().positive('Duration must be positive').optional(),
@@ -63,10 +71,20 @@ export const getAgendaItemSchema = z.object({
   }),
 });
 
-export type CreateAgendaGroupInput = z.infer<typeof createAgendaGroupSchema>['body'];
-export type UpdateAgendaGroupInput = z.infer<typeof updateAgendaGroupSchema>['body'];
-export type GetAgendaGroupParams = z.infer<typeof getAgendaGroupSchema>['params'];
+export type CreateAgendaGroupInput = z.infer<
+  typeof createAgendaGroupSchema
+>['body'];
+export type UpdateAgendaGroupInput = z.infer<
+  typeof updateAgendaGroupSchema
+>['body'];
+export type GetAgendaGroupParams = z.infer<
+  typeof getAgendaGroupSchema
+>['params'];
 
-export type CreateAgendaItemInput = z.infer<typeof createAgendaItemSchema>['body'];
-export type UpdateAgendaItemInput = z.infer<typeof updateAgendaItemSchema>['body'];
+export type CreateAgendaItemInput = z.infer<
+  typeof createAgendaItemSchema
+>['body'];
+export type UpdateAgendaItemInput = z.infer<
+  typeof updateAgendaItemSchema
+>['body'];
 export type GetAgendaItemParams = z.infer<typeof getAgendaItemSchema>['params'];

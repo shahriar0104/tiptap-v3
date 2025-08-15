@@ -5,6 +5,7 @@ import type {
   AgendaItemModel,
   OrganizationModel,
   BoardMeetingModel,
+  OrgMemberModel,
 } from './models';
 import {
   UserModelImpl,
@@ -12,6 +13,7 @@ import {
   AgendaItemModelImpl,
   OrganizationModelImpl,
   BoardMeetingModelImpl,
+  OrgMemberModelImpl,
 } from './models';
 
 import prisma from './config/database';
@@ -23,6 +25,7 @@ import {
   AgendaItemServiceImpl,
 } from './services';
 import type { BoardMeetingService, AgendaGroupService, AgendaItemService } from './services';
+import { OrganizationService, OrganizationServiceImpl } from './services/organizationService';
 
 // Services with Impl pattern
 import { EditorContentService, EditorContentServiceImpl } from './services/editorContentService';
@@ -42,6 +45,7 @@ import {
   AgendaGroupController, 
   AgendaItemController 
 } from './controllers';
+import type { OrganizationController } from './controllers';
 
 // Controllers for newly added modules
 import { EditorContentController } from './controllers/editorContentController';
@@ -56,6 +60,7 @@ export class Container {
   public readonly userModel: UserModel;
   public readonly organizationModel: OrganizationModel;
   public readonly boardMeetingModel: BoardMeetingModel;
+  public readonly orgMemberModel: OrgMemberModel;
   public readonly agendaGroupModel: AgendaGroupModel;
   public readonly agendaItemModel: AgendaItemModel;
   public readonly editorContentModel: EditorContentModel;
@@ -68,6 +73,7 @@ export class Container {
   public readonly boardMeetingService: BoardMeetingService;
   public readonly agendaGroupService: AgendaGroupService;
   public readonly agendaItemService: AgendaItemService;
+  public readonly organizationService: OrganizationService;
   public readonly editorContentService: EditorContentService;
   public readonly presentationService: PresentationService;
   public readonly slideService: SlideService;
@@ -78,6 +84,7 @@ export class Container {
   public readonly boardMeetingController: BoardMeetingController;
   public readonly agendaGroupController: AgendaGroupController;
   public readonly agendaItemController: AgendaItemController;
+  public readonly organizationController: OrganizationController;
   public readonly editorContentController: EditorContentController;
   public readonly presentationController: PresentationController;
   public readonly slideController: SlideController;
@@ -91,6 +98,7 @@ export class Container {
     this.userModel = new UserModelImpl(prisma);
     this.organizationModel = new OrganizationModelImpl(prisma);
     this.boardMeetingModel = new BoardMeetingModelImpl(prisma);
+    this.orgMemberModel = new OrgMemberModelImpl(prisma);
     this.agendaGroupModel = new AgendaGroupModelImpl(prisma);
     this.agendaItemModel = new AgendaItemModelImpl(prisma);
     this.editorContentModel = new EditorContentModelImpl(prisma);
@@ -99,30 +107,24 @@ export class Container {
     this.uploadModel = new UploadModelImpl(prisma);
 
     // Initialize Services with dependencies
-    this.authService = new AuthService(this.userModel, this.organizationModel);
-    this.boardMeetingService = new BoardMeetingServiceImpl(
-      this.boardMeetingModel,
-      this.organizationModel,
-      this.userModel
-    );
-    this.agendaGroupService = new AgendaGroupServiceImpl(
-      this.agendaGroupModel,
-      this.boardMeetingModel
-    );
-    this.agendaItemService = new AgendaItemServiceImpl(
-      this.agendaItemModel,
-      this.agendaGroupModel
-    );
-    this.editorContentService = new EditorContentServiceImpl(this.editorContentModel);
-    this.presentationService = new PresentationServiceImpl(this.presentationModel);
-    this.slideService = new SlideServiceImpl(this.slideModel);
-    this.uploadService = new UploadServiceImpl(this.uploadModel);
+    this.authService = new AuthService(this.userModel);
+    this.boardMeetingService = new BoardMeetingServiceImpl();
+    this.agendaGroupService = new AgendaGroupServiceImpl();
+    this.agendaItemService = new AgendaItemServiceImpl();
+    this.organizationService = new OrganizationServiceImpl();
+    this.editorContentService = new EditorContentServiceImpl();
+    this.presentationService = new PresentationServiceImpl();
+    this.slideService = new SlideServiceImpl();
+    this.uploadService = new UploadServiceImpl();
 
     // Initialize Controllers with dependencies
     this.authController = new AuthController(this.authService);
     this.boardMeetingController = new BoardMeetingController(this.boardMeetingService);
     this.agendaGroupController = new AgendaGroupController(this.agendaGroupService);
     this.agendaItemController = new AgendaItemController(this.agendaItemService);
+    // Lazy import to avoid circular types, or directly import at top if you prefer strict typing
+    const { OrganizationController } = require('./controllers/organizationController');
+    this.organizationController = new OrganizationController(this.organizationService);
     this.editorContentController = new EditorContentController(this.editorContentService);
     this.presentationController = new PresentationController(this.presentationService);
     this.slideController = new SlideController(this.slideService);

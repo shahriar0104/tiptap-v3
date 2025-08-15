@@ -2,31 +2,35 @@ import { Response } from 'express';
 import { ApiResponse, PaginatedResponse } from '../types';
 
 export const sendSuccess = <T>(
-  res: Response,
+  res: Response<ApiResponse<T>>,
   data: T,
   message?: string,
   statusCode = 200
 ): Response<ApiResponse<T>> => {
-  return res.status(statusCode).json({
+  const payload: ApiResponse<T> = {
     success: true,
     data,
-    message,
-  });
+  };
+  if (message !== undefined) {
+    payload.message = message;
+  }
+  return res.status(statusCode).json(payload);
 };
 
 export const sendError = (
-  res: Response,
+  res: Response<ApiResponse<unknown>>,
   error: string,
   statusCode = 500
-): Response<ApiResponse> => {
-  return res.status(statusCode).json({
+): Response<ApiResponse<unknown>> => {
+  const payload: ApiResponse<unknown> = {
     success: false,
     error,
-  });
+  };
+  return res.status(statusCode).json(payload);
 };
 
 export const sendPaginatedResponse = <T>(
-  res: Response,
+  res: Response<ApiResponse<PaginatedResponse<T>>>,
   data: T[],
   page: number,
   limit: number,
@@ -34,8 +38,8 @@ export const sendPaginatedResponse = <T>(
   message?: string
 ): Response<ApiResponse<PaginatedResponse<T>>> => {
   const totalPages = Math.ceil(total / limit);
-  
-  return res.status(200).json({
+
+  const payload: ApiResponse<PaginatedResponse<T>> = {
     success: true,
     data: {
       data,
@@ -46,6 +50,9 @@ export const sendPaginatedResponse = <T>(
         totalPages,
       },
     },
-    message,
-  });
+  };
+  if (message !== undefined) {
+    payload.message = message;
+  }
+  return res.status(200).json(payload);
 };

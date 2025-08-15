@@ -9,7 +9,11 @@ interface UpdateEditorContentInput extends UpdateEditorContentData {}
 export class EditorContentController {
   constructor(private editorContentService: EditorContentService) {}
 
-  createEditorContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createEditorContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const data = req.body as CreateEditorContentInput;
 
@@ -20,7 +24,11 @@ export class EditorContentController {
     }
   };
 
-  getEditorContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getEditorContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -34,35 +42,51 @@ export class EditorContentController {
     }
   };
 
-  getEditorContentByBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getEditorContentByBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { boardMeetingId } = req.params;
       if (!boardMeetingId) {
         throw new Error('Board meeting ID is required');
       }
 
-      const contents = await this.editorContentService.getEditorContentByBoardMeeting(boardMeetingId);
+      const contents =
+        await this.editorContentService.getEditorContentByBoardMeeting(
+          boardMeetingId
+        );
       sendSuccess(res, contents, 'Editor contents retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  getLatestEditorContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getLatestEditorContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { boardMeetingId } = req.params;
       if (!boardMeetingId) {
         throw new Error('Board meeting ID is required');
       }
 
-      const content = await this.editorContentService.getLatestEditorContent(boardMeetingId);
+      const content =
+        await this.editorContentService.getLatestEditorContent(boardMeetingId);
       sendSuccess(res, content, 'Latest editor content retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updateEditorContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateEditorContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -70,14 +94,21 @@ export class EditorContentController {
       }
       const data = req.body as UpdateEditorContentInput;
 
-      const content = await this.editorContentService.updateEditorContent(id, data);
+      const content = await this.editorContentService.updateEditorContent(
+        id,
+        data
+      );
       sendSuccess(res, content, 'Editor content updated successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  createNewVersion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createNewVersion = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { boardMeetingId } = req.params;
       if (!boardMeetingId) {
@@ -85,14 +116,26 @@ export class EditorContentController {
       }
       const { contentJson } = req.body;
 
-      const content = await this.editorContentService.createNewVersion(boardMeetingId, contentJson);
-      sendSuccess(res, content, 'New editor content version created successfully', 201);
+      const content = await this.editorContentService.createNewVersion(
+        boardMeetingId,
+        contentJson
+      );
+      sendSuccess(
+        res,
+        content,
+        'New editor content version created successfully',
+        201
+      );
     } catch (error) {
       next(error);
     }
   };
 
-  deleteEditorContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteEditorContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {

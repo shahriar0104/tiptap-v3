@@ -1,9 +1,9 @@
-import {NextFunction, Request, Response} from 'express';
-import {supabase} from '../config/supabase';
-import {UserModel} from '../models';
-import {AuthenticatedRequest} from '../types';
-import {ForbiddenError, UnauthorizedError} from '../utils/errors';
-import {COOKIE_NAMES, cookieConfig} from '../config/cookies';
+import { NextFunction, Request, Response } from 'express';
+import { supabase } from '../config/supabase';
+import { UserModel } from '../models';
+import { AuthenticatedRequest } from '../types';
+import { ForbiddenError, UnauthorizedError } from '../utils/errors';
+import { COOKIE_NAMES, cookieConfig } from '../config/cookies';
 
 export class AuthMiddleware {
   constructor(private userModel: UserModel) {}
@@ -21,6 +21,9 @@ export class AuthMiddleware {
     // Board meetings
     '/api/board-meetings',
     '/api/board-meetings/*',
+    // Organizations (protect GET endpoints; POST /api/organizations is public for signup)
+    'GET:/api/organizations',
+    'GET:/api/organizations/*',
     // Agenda groups/items
     '/api/agenda',
     '/api/agenda/*',
@@ -43,7 +46,8 @@ export class AuthMiddleware {
     if (
       this.PROTECTED_ROUTES.includes(routeKey) ||
       this.PROTECTED_ROUTES.includes(normalizedPath)
-    ) return true;
+    )
+      return true;
 
     return this.PROTECTED_ROUTES.some(route => {
       if (route.includes('*')) {
@@ -54,7 +58,6 @@ export class AuthMiddleware {
       return false;
     });
   };
-
 
   // Helper functions to refresh access token using refresh token
   private refreshAccessToken = async (refreshToken: string) => {
@@ -75,7 +78,7 @@ export class AuthMiddleware {
       ...cookieConfig,
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
-    
+
     if (session.refresh_token) {
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, session.refresh_token, {
         ...cookieConfig,
@@ -85,7 +88,11 @@ export class AuthMiddleware {
   };
 
   // Central authentication middleware
-  authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  authenticate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const method = req.method;
       const path = req.path;
@@ -110,8 +117,11 @@ export class AuthMiddleware {
       }
 
       // Step 2: Verify access token
-      const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(accessToken);
+
       if (error || !user) {
         // Access token is invalid/expired, try refresh token
         if (refreshToken) {
@@ -127,7 +137,7 @@ export class AuthMiddleware {
       if (!dbUser) {
         throw new UnauthorizedError('User not found');
       }
-      
+
       // Attach user to request
       (req as AuthenticatedRequest).user = dbUser;
       next();
@@ -137,27 +147,36 @@ export class AuthMiddleware {
   };
 
   // Helper method to handle token refresh
-  private handleTokenRefresh = async (req: Request, res: Response, refreshToken: string): Promise<void> => {
+  private handleTokenRefresh = async (
+    req: Request,
+    res: Response,
+    refreshToken: string
+  ): Promise<void> => {
     try {
       // Refresh the session
       const session = await this.refreshAccessToken(refreshToken);
-      
+
       // Set new cookies with refreshed tokens
       this.setAuthCookies(res, session);
-      
+
       // Verify the new access token and get a user
-      const { data: { user }, error } = await supabase.auth.getUser(session.access_token);
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(session.access_token);
+
       if (error || !user) {
-        throw new UnauthorizedError('Failed to authenticate with refreshed token');
+        throw new UnauthorizedError(
+          'Failed to authenticate with refreshed token'
+        );
       }
-      
+
       // Get user from database
       const dbUser = await this.userModel.findById(user.id);
       if (!dbUser) {
         throw new UnauthorizedError('User not found');
       }
-      
+
       // Attach user to request
       (req as AuthenticatedRequest).user = dbUser;
     } catch (error) {
@@ -167,16 +186,22 @@ export class AuthMiddleware {
 
   // Legacy methods for backward compatibility
   requireRole = (requiredRole: string) => {
-    return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    return async (
+      req: Request,
+      _res: Response,
+      next: NextFunction
+    ): Promise<void> => {
       try {
         const user = (req as AuthenticatedRequest).user;
-        
+
         if (!user) {
           throw new UnauthorizedError('Authentication required');
         }
 
         if (user.role !== requiredRole) {
-          throw new ForbiddenError(`Access denied. Required role: ${requiredRole}`);
+          throw new ForbiddenError(
+            `Access denied. Required role: ${requiredRole}`
+          );
         }
 
         next();
@@ -186,14 +211,18 @@ export class AuthMiddleware {
     };
   };
 
-  requireOrganization = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  requireOrganization = async (
+    req: Request,
+    _res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
-      
+
       if (!user) {
         throw new UnauthorizedError('Authentication required');
       }
-      
+
       // Organization membership will be checked at the service level if needed
       // The user model no longer has organizationId directly
       next();
@@ -204,7 +233,11 @@ export class AuthMiddleware {
 }
 
 // Export a function for easier use in routes
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // This will be initialized by the container
   const authMiddleware = (req as any).authMiddleware as AuthMiddleware;
   return authMiddleware.authenticate(req, res, next);

@@ -34,8 +34,11 @@ export const errorHandler = (
 
   // Handle Prisma errors
   if (error.name === 'PrismaClientKnownRequestError') {
-    const prismaError = error as unknown as { code: string; meta?: { target?: string[] } };
-    
+    const prismaError = error as unknown as {
+      code: string;
+      meta?: { target?: string[] };
+    };
+
     switch (prismaError.code) {
       case 'P2002':
         res.status(409).json({
@@ -61,13 +64,17 @@ export const errorHandler = (
   // Handle unexpected errors
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : error.message,
+    error:
+      process.env.NODE_ENV === 'production'
+        ? 'Internal server error'
+        : error.message,
   });
 };
 
-export const notFoundHandler = (req: Request, res: Response): Response<ApiResponse> => {
+export const notFoundHandler = (
+  req: Request,
+  res: Response
+): Response<ApiResponse> => {
   return res.status(404).json({
     success: false,
     error: `Route ${req.method} ${req.path} not found`,

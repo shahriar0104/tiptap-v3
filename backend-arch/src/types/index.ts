@@ -27,6 +27,7 @@ export interface PaginatedResponse<T> {
     page: number;
     limit: number;
     total: number;
+    totalPages: number;
   };
 }
 
@@ -86,10 +87,20 @@ export interface SupabaseUser {
   id: string;
   email?: string;
   user_metadata?: {
-    firstName?: string;
-    lastName?: string;
+    full_name?: string;
+    avatar_url?: string;
+    [key: string]: unknown;
   };
 }
+
+// Safe JSON value type for Tiptap and slide bodies
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
 
 // Upload types
 export interface CreateUploadData {
@@ -108,12 +119,12 @@ export interface UpdateUploadData {
 // EditorContent types
 export interface CreateEditorContentData {
   boardMeetingId: string;
-  contentJson: any; // Tiptap JSON content
+  contentJson: JSONValue; // Tiptap JSON content
   version?: number;
 }
 
 export interface UpdateEditorContentData {
-  contentJson?: any;
+  contentJson?: JSONValue;
   version?: number;
 }
 
@@ -133,14 +144,14 @@ export interface CreateSlideData {
   agendaItemId?: string;
   kind: 'TITLE' | 'SUMMARY' | 'AGENDA_ITEM_SUMMARY' | 'DETAIL';
   title?: string;
-  bodyJson?: any;
+  bodyJson?: JSONValue;
   orderIndex: number;
 }
 
 export interface UpdateSlideData {
   kind?: 'TITLE' | 'SUMMARY' | 'AGENDA_ITEM_SUMMARY' | 'DETAIL';
   title?: string;
-  bodyJson?: any;
+  bodyJson?: JSONValue;
   orderIndex?: number;
   agendaItemId?: string | null;
 }

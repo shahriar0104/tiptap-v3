@@ -10,47 +10,70 @@ interface UpdatePresentationInput extends UpdatePresentationData {}
 export class PresentationController {
   constructor(private presentationService: PresentationService) {}
 
-  createPresentation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createPresentation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const data = req.body as CreatePresentationInput;
 
-      const presentation = await this.presentationService.createPresentation(data, user.id);
+      const presentation = await this.presentationService.createPresentation(
+        data,
+        user.id
+      );
       sendSuccess(res, presentation, 'Presentation created successfully', 201);
     } catch (error) {
       next(error);
     }
   };
 
-  getPresentation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getPresentation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
         throw new Error('Presentation ID is required');
       }
 
-      const presentation = await this.presentationService.getPresentationById(id);
+      const presentation =
+        await this.presentationService.getPresentationById(id);
       sendSuccess(res, presentation, 'Presentation retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  getPresentationsByBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getPresentationsByBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { boardMeetingId } = req.params;
       if (!boardMeetingId) {
         throw new Error('Board meeting ID is required');
       }
 
-      const presentations = await this.presentationService.getPresentationsByBoardMeeting(boardMeetingId);
+      const presentations =
+        await this.presentationService.getPresentationsByBoardMeeting(
+          boardMeetingId
+        );
       sendSuccess(res, presentations, 'Presentations retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updatePresentation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updatePresentation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -58,14 +81,21 @@ export class PresentationController {
       }
       const data = req.body as UpdatePresentationInput;
 
-      const presentation = await this.presentationService.updatePresentation(id, data);
+      const presentation = await this.presentationService.updatePresentation(
+        id,
+        data
+      );
       sendSuccess(res, presentation, 'Presentation updated successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  deletePresentation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deletePresentation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {

@@ -1,17 +1,18 @@
 import { Router } from 'express';
 import { container } from '../container';
 import { validateRequest } from '../middlewares';
-import { 
-  createAgendaGroupSchema, 
-  updateAgendaGroupSchema, 
+import {
+  createAgendaGroupSchema,
+  updateAgendaGroupSchema,
   getAgendaGroupSchema,
   createAgendaItemSchema,
   updateAgendaItemSchema,
-  getAgendaItemSchema
+  getAgendaItemSchema,
 } from '../validators/agenda';
 
 const router = Router();
-const { agendaGroupController, agendaItemController, authMiddleware } = container;
+const { agendaGroupController, agendaItemController, authMiddleware } =
+  container;
 
 // All routes below are protected by global auth middleware
 router.use(authMiddleware.requireOrganization);
@@ -44,7 +45,8 @@ router.use(authMiddleware.requireOrganization);
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  */
-router.post('/groups', 
+router.post(
+  '/groups',
   validateRequest(createAgendaGroupSchema),
   agendaGroupController.createAgendaGroup
 );
@@ -71,7 +73,8 @@ router.post('/groups',
  *       404:
  *         description: Not found
  */
-router.get('/groups/:id', 
+router.get(
+  '/groups/:id',
   validateRequest(getAgendaGroupSchema),
   agendaGroupController.getAgendaGroup
 );
@@ -105,7 +108,8 @@ router.get('/groups/:id',
  *       404:
  *         description: Not found
  */
-router.put('/groups/:id', 
+router.put(
+  '/groups/:id',
   validateRequest(updateAgendaGroupSchema),
   agendaGroupController.updateAgendaGroup
 );
@@ -128,7 +132,8 @@ router.put('/groups/:id',
  *       404:
  *         description: Not found
  */
-router.delete('/groups/:id', 
+router.delete(
+  '/groups/:id',
   validateRequest(getAgendaGroupSchema),
   agendaGroupController.deleteAgendaGroup
 );
@@ -149,7 +154,8 @@ router.delete('/groups/:id',
  *       200:
  *         description: OK
  */
-router.get('/board-meetings/:boardMeetingId/groups', 
+router.get(
+  '/board-meetings/:boardMeetingId/groups',
   agendaGroupController.getAgendaGroupsByBoardMeeting
 );
 
@@ -180,7 +186,8 @@ router.get('/board-meetings/:boardMeetingId/groups',
  *       200:
  *         description: Reordered
  */
-router.post('/board-meetings/:boardMeetingId/groups/reorder', 
+router.post(
+  '/board-meetings/:boardMeetingId/groups/reorder',
   agendaGroupController.reorderAgendaGroups
 );
 
@@ -201,7 +208,8 @@ router.post('/board-meetings/:boardMeetingId/groups/reorder',
  *       201:
  *         description: Created
  */
-router.post('/items', 
+router.post(
+  '/items',
   validateRequest(createAgendaItemSchema),
   agendaItemController.createAgendaItem
 );
@@ -224,7 +232,8 @@ router.post('/items',
  *       404:
  *         description: Not found
  */
-router.get('/items/:id', 
+router.get(
+  '/items/:id',
   validateRequest(getAgendaItemSchema),
   agendaItemController.getAgendaItem
 );
@@ -253,7 +262,8 @@ router.get('/items/:id',
  *       404:
  *         description: Not found
  */
-router.put('/items/:id', 
+router.put(
+  '/items/:id',
   validateRequest(updateAgendaItemSchema),
   agendaItemController.updateAgendaItem
 );
@@ -276,7 +286,8 @@ router.put('/items/:id',
  *       404:
  *         description: Not found
  */
-router.delete('/items/:id', 
+router.delete(
+  '/items/:id',
   validateRequest(getAgendaItemSchema),
   agendaItemController.deleteAgendaItem
 );
@@ -306,7 +317,8 @@ router.delete('/items/:id',
  *       200:
  *         description: Updated
  */
-router.patch('/items/:id/status', 
+router.patch(
+  '/items/:id/status',
   validateRequest(getAgendaItemSchema),
   agendaItemController.updateAgendaItemStatus
 );
@@ -327,7 +339,8 @@ router.patch('/items/:id/status',
  *       200:
  *         description: OK
  */
-router.get('/groups/:agendaGroupId/items', 
+router.get(
+  '/groups/:agendaGroupId/items',
   agendaItemController.getAgendaItemsByGroup
 );
 
@@ -347,7 +360,8 @@ router.get('/groups/:agendaGroupId/items',
  *       200:
  *         description: OK
  */
-router.get('/board-meetings/:boardMeetingId/items', 
+router.get(
+  '/board-meetings/:boardMeetingId/items',
   agendaItemController.getAgendaItemsByBoardMeeting
 );
 
@@ -378,7 +392,8 @@ router.get('/board-meetings/:boardMeetingId/items',
  *       200:
  *         description: Reordered
  */
-router.post('/groups/:agendaGroupId/items/reorder', 
+router.post(
+  '/groups/:agendaGroupId/items/reorder',
   agendaItemController.reorderAgendaItems
 );
 

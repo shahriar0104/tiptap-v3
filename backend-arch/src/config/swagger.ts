@@ -6,7 +6,8 @@ const swaggerDefinition: SwaggerDefinition = {
   info: {
     title: 'Board Meeting Management API',
     version: '1.0.0',
-    description: 'Production-grade Express.js REST API for board meeting management with TypeScript, Prisma, and Supabase Auth',
+    description:
+      'Production-grade Express.js REST API for board meeting management with TypeScript, Prisma, and Supabase Auth',
     contact: {
       name: 'API Support',
       email: 'support@example.com',

@@ -18,7 +18,10 @@ export const getUploadParamsSchema = z.object({
 
 export const getUploadsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/, 'Page must be a positive number').optional(),
-  limit: z.string().regex(/^\d+$/, 'Limit must be a positive number').optional(),
+  limit: z
+    .string()
+    .regex(/^\d+$/, 'Limit must be a positive number')
+    .optional(),
 });
 
 export type CreateUploadInput = z.infer<typeof createUploadSchema>;

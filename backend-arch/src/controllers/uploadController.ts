@@ -10,7 +10,11 @@ interface UpdateUploadInput extends UpdateUploadData {}
 export class UploadController {
   constructor(private uploadService: UploadService) {}
 
-  createUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createUpload = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const data = req.body as CreateUploadInput;
@@ -22,7 +26,11 @@ export class UploadController {
     }
   };
 
-  getUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getUpload = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -36,21 +44,29 @@ export class UploadController {
     }
   };
 
-  getUploads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getUploads = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { page, limit } = req.query;
       const pageNum = page ? parseInt(page as string, 10) : 1;
       const limitNum = limit ? parseInt(limit as string, 10) : 10;
 
       const result = await this.uploadService.getUploads(pageNum, limitNum);
-      
+
       sendSuccess(res, result, 'Uploads retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updateUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateUpload = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -65,7 +81,11 @@ export class UploadController {
     }
   };
 
-  deleteUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteUpload = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -79,7 +99,11 @@ export class UploadController {
     }
   };
 
-  getUserUploads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getUserUploads = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
 

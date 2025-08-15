@@ -13,8 +13,8 @@ declare namespace NodeJS {
     SUPABASE_ANON_KEY: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
 
-    JWT_SECRET?: string
-    JWT_EXPIRES_IN?: string
+    JWT_SECRET?: string;
+    JWT_EXPIRES_IN?: string;
 
     LOG_LEVEL: 'info' | 'warn' | 'error' | 'debug';
     LOG_PRETTY_PRINT: 'true' | 'false';

@@ -2,16 +2,20 @@ import { Request, Response, NextFunction } from 'express';
 import type { AgendaItemService } from '../services/agendaItemService';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess } from '../utils/response';
-import { 
-  CreateAgendaItemInput, 
-  UpdateAgendaItemInput, 
-  GetAgendaItemParams 
+import {
+  CreateAgendaItemInput,
+  UpdateAgendaItemInput,
+  GetAgendaItemParams,
 } from '../validators/agenda';
 
 export class AgendaItemController {
   constructor(private agendaItemService: AgendaItemService) {}
 
-  createAgendaItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createAgendaItem = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const data = req.body as CreateAgendaItemInput;
@@ -26,19 +30,30 @@ export class AgendaItemController {
     }
   };
 
-  getAgendaItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgendaItem = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetAgendaItemParams;
 
-      const agendaItem = await this.agendaItemService.getAgendaItemById(id, user.organizationId || undefined);
+      const agendaItem = await this.agendaItemService.getAgendaItemById(
+        id,
+        user.organizationId || undefined
+      );
       sendSuccess(res, agendaItem, 'Agenda item retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  getAgendaItemsByGroup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgendaItemsByGroup = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { agendaGroupId } = req.params as { agendaGroupId: string };
@@ -53,22 +68,31 @@ export class AgendaItemController {
     }
   };
 
-  getAgendaItemsByBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgendaItemsByBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { boardMeetingId } = req.params as { boardMeetingId: string };
 
-      const agendaItems = await this.agendaItemService.getAgendaItemsByBoardMeeting(
-        boardMeetingId,
-        user.organizationId || undefined
-      );
+      const agendaItems =
+        await this.agendaItemService.getAgendaItemsByBoardMeeting(
+          boardMeetingId,
+          user.organizationId || undefined
+        );
       sendSuccess(res, agendaItems, 'Agenda items retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updateAgendaItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateAgendaItem = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetAgendaItemParams;
@@ -85,23 +109,36 @@ export class AgendaItemController {
     }
   };
 
-  deleteAgendaItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteAgendaItem = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetAgendaItemParams;
 
-      await this.agendaItemService.deleteAgendaItem(id, user.organizationId || undefined);
+      await this.agendaItemService.deleteAgendaItem(
+        id,
+        user.organizationId || undefined
+      );
       sendSuccess(res, null, 'Agenda item deleted successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updateAgendaItemStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateAgendaItemStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { id } = req.params as GetAgendaItemParams;
-      const { status } = req.body as { status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' };
+      const { status } = req.body as {
+        status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+      };
 
       const agendaItem = await this.agendaItemService.updateAgendaItemStatus(
         id,
@@ -114,11 +151,17 @@ export class AgendaItemController {
     }
   };
 
-  reorderAgendaItems = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  reorderAgendaItems = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const { agendaGroupId } = req.params as { agendaGroupId: string };
-      const { itemOrders } = req.body as { itemOrders: Array<{ id: string; order: number }> };
+      const { itemOrders } = req.body as {
+        itemOrders: Array<{ id: string; order: number }>;
+      };
 
       await this.agendaItemService.reorderAgendaItems(
         agendaGroupId,

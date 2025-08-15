@@ -150,6 +150,8 @@ model AgendaGroup {
   createdAt      DateTime       @default(now())
 
   agendaItems    AgendaItem[]
+
+  @@unique([boardMeetingId, order])
 }
 
 model AgendaItem {
@@ -165,6 +167,8 @@ model AgendaItem {
 
   documents     AgendaItemDocument[]
   Slide         Slide[]
+
+  @@unique([agendaGroupId, order])
 }
 
 model EditorContent {
@@ -223,4 +227,6 @@ model Slide {
   bodyJson        Json?        // JSON for slide content
   orderIndex      Int
   createdAt       DateTime     @default(now())
+
+  @@unique([presentationId, orderIndex])
 }

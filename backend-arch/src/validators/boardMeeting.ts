@@ -11,7 +11,11 @@ export const createBoardMeetingSchema = z.object({
 
 export const updateBoardMeetingSchema = z.object({
   body: z.object({
-    title: z.string().min(1, 'Title is required').max(255, 'Title too long').optional(),
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(255, 'Title too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
     meetingDate: z.string().datetime('Invalid date format').optional(),
     status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
@@ -36,7 +40,15 @@ export const getBoardMeetingsSchema = z.object({
   }),
 });
 
-export type CreateBoardMeetingInput = z.infer<typeof createBoardMeetingSchema>['body'];
-export type UpdateBoardMeetingInput = z.infer<typeof updateBoardMeetingSchema>['body'];
-export type GetBoardMeetingParams = z.infer<typeof getBoardMeetingSchema>['params'];
-export type GetBoardMeetingsQuery = z.infer<typeof getBoardMeetingsSchema>['query'];
+export type CreateBoardMeetingInput = z.infer<
+  typeof createBoardMeetingSchema
+>['body'];
+export type UpdateBoardMeetingInput = z.infer<
+  typeof updateBoardMeetingSchema
+>['body'];
+export type GetBoardMeetingParams = z.infer<
+  typeof getBoardMeetingSchema
+>['params'];
+export type GetBoardMeetingsQuery = z.infer<
+  typeof getBoardMeetingsSchema
+>['query'];

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { UploadController } from '../controllers/uploadController';
 import { authenticate } from '../middlewares';
 import { validateRequest } from '../middlewares';
@@ -11,8 +11,15 @@ import {
 export function createUploadRoutes(uploadController: UploadController): Router {
   const router = Router();
 
+  // Utility wrapper for async handlers/middlewares
+  const wrap = (
+    fn: (...args: Parameters<RequestHandler>) => Promise<unknown>
+  ): RequestHandler => (req, res, next) => {
+    void fn(req, res, next);
+  };
+
   // Apply authentication to all upload routes
-  router.use(authenticate);
+  router.use(wrap(authenticate));
 
   // POST /uploads - Create new upload
   /**
@@ -47,7 +54,11 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    *             schema:
    *               $ref: '#/components/schemas/ApiResponse'
    */
-  router.post('/', validateRequest({ body: createUploadSchema }), uploadController.createUpload);
+  router.post(
+    '/',
+    validateRequest({ body: createUploadSchema }),
+    wrap(uploadController.createUpload)
+  );
 
   // GET /uploads - Get all uploads with pagination
   /**
@@ -81,7 +92,7 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    *             schema:
    *               $ref: '#/components/schemas/PaginatedResponse'
    */
-  router.get('/user/:userId', uploadController.getUploads);
+  router.get('/user/:userId', wrap(uploadController.getUploads));
 
   // GET /uploads/me - Get current user's uploads
   /**
@@ -98,7 +109,7 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    *             schema:
    *               $ref: '#/components/schemas/ApiResponse'
    */
-  router.get('/me', uploadController.getUserUploads);
+  router.get('/me', wrap(uploadController.getUserUploads));
 
   // GET /uploads/:id - Get upload by ID
   /**
@@ -124,7 +135,11 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    *       404:
    *         description: Not found
    */
-  router.get('/:id', validateRequest({ params: getUploadParamsSchema }), uploadController.getUpload);
+  router.get(
+    '/:id',
+    validateRequest({ params: getUploadParamsSchema }),
+    wrap(uploadController.getUpload)
+  );
 
   // PUT /uploads/:id - Update upload
   /**
@@ -164,11 +179,11 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    */
   router.put(
     '/:id',
-    validateRequest({ 
+    validateRequest({
       params: getUploadParamsSchema,
-      body: updateUploadSchema 
+      body: updateUploadSchema,
     }),
-    uploadController.updateUpload
+    wrap(uploadController.updateUpload)
   );
 
   // DELETE /uploads/:id - Delete upload
@@ -191,7 +206,11 @@ export function createUploadRoutes(uploadController: UploadController): Router {
    *       404:
    *         description: Not found
    */
-  router.delete('/:id', validateRequest({ params: getUploadParamsSchema }), uploadController.deleteUpload);
+  router.delete(
+    '/:id',
+    validateRequest({ params: getUploadParamsSchema }),
+    wrap(uploadController.deleteUpload)
+  );
 
   return router;
 }

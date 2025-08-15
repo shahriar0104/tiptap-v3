@@ -9,7 +9,11 @@ interface UpdateSlideInput extends UpdateSlideData {}
 export class SlideController {
   constructor(private slideService: SlideService) {}
 
-  createSlide = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createSlide = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const data = req.body as CreateSlideInput;
 
@@ -20,7 +24,11 @@ export class SlideController {
     }
   };
 
-  getSlide = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSlide = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -34,35 +42,49 @@ export class SlideController {
     }
   };
 
-  getSlidesByPresentation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSlidesByPresentation = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { presentationId } = req.params;
       if (!presentationId) {
         throw new Error('Presentation ID is required');
       }
 
-      const slides = await this.slideService.getSlidesByPresentation(presentationId);
+      const slides =
+        await this.slideService.getSlidesByPresentation(presentationId);
       sendSuccess(res, slides, 'Slides retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  getSlidesByAgendaItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSlidesByAgendaItem = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { agendaItemId } = req.params;
       if (!agendaItemId) {
         throw new Error('Agenda item ID is required');
       }
 
-      const slides = await this.slideService.getSlidesByAgendaItem(agendaItemId);
+      const slides =
+        await this.slideService.getSlidesByAgendaItem(agendaItemId);
       sendSuccess(res, slides, 'Slides retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  updateSlide = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateSlide = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -77,7 +99,11 @@ export class SlideController {
     }
   };
 
-  deleteSlide = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteSlide = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       if (!id) {
@@ -91,7 +117,11 @@ export class SlideController {
     }
   };
 
-  reorderSlides = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  reorderSlides = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { presentationId } = req.params;
       if (!presentationId) {

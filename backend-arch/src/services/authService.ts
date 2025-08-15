@@ -1,34 +1,31 @@
-import { User } from '@prisma/client';
+import { User, OrgRole, Organization } from '@prisma/client';
 import { supabase } from '../config/supabase';
-import { UserModel, OrganizationModel } from '../models';
+import { UserModel } from '../models';
+import { withTransactionModels } from '../utils/transaction';
 import { SupabaseUser } from '../types';
 import { CreateUserData as ModelCreateUserData } from '../models/userModel';
-import { UnauthorizedError, NotFoundError, ConflictError } from '../utils/errors';
+import type { Session } from '@supabase/supabase-js';
+import {
+  UnauthorizedError,
+  NotFoundError,
+  ConflictError,
+} from '../utils/errors';
 
 export class AuthService {
-  constructor(private userModel: UserModel, private organizationModel: OrganizationModel) {}
+  constructor(private userModel: UserModel) {}
 
   async verifyToken(token: string): Promise<User> {
     try {
       const { data: supabaseUser, error } = await supabase.auth.getUser(token);
-      
+
       if (error || !supabaseUser.user) {
         throw new UnauthorizedError('Invalid or expired token');
       }
 
-      // Find or create user in our database
-      let user = await this.userModel.findById(supabaseUser.user.id);
-      
+      // Find user in our database; do not create users during verification
+      const user = await this.userModel.findById(supabaseUser.user.id);
       if (!user) {
-        // Create user if doesn't exist
-        const userData: ModelCreateUserData = {
-          id: supabaseUser.user.id,
-          email: supabaseUser.user.email ?? '',
-          name: supabaseUser.user.user_metadata?.['full_name'] || supabaseUser.user.email?.split('@')[0] || '',
-          avatar: supabaseUser.user.user_metadata?.['avatar_url'],
-        };
-        
-        user = await this.userModel.create(userData);
+        throw new UnauthorizedError('User not registered');
       }
 
       return user;
@@ -40,7 +37,10 @@ export class AuthService {
     }
   }
 
-  async login(email: string, password: string): Promise<{ user: User; session: any }> {
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ user: User; session: Session }> {
     try {
       // Authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -57,13 +57,14 @@ export class AuthService {
 
       if (!user) {
         // Create user if doesn't exist (shouldn't happen for login, but safety check)
+        const nameFromEmail = data.user.email?.split('@')[0] ?? '';
         const userData: ModelCreateUserData = {
           id: data.user.id,
-          email: data.user.email!,
-          name: data.user.user_metadata?.['full_name'] || data.user.email?.split('@')[0] || '',
+          email: data.user.email ?? '',
+          name: nameFromEmail,
           role: 'MEMBER',
         };
-        
+
         user = await this.userModel.create(userData);
       }
 
@@ -81,7 +82,7 @@ export class AuthService {
 
   async getCurrentUser(userId: string): Promise<User> {
     const user = await this.userModel.findById(userId);
-    
+
     if (!user) {
       throw new NotFoundError('User not found');
     }
@@ -90,11 +91,11 @@ export class AuthService {
   }
 
   async updateUserProfile(
-    userId: string, 
+    userId: string,
     data: Partial<ModelCreateUserData>
   ): Promise<User> {
     const existingUser = await this.userModel.findById(userId);
-    
+
     if (!existingUser) {
       throw new NotFoundError('User not found');
     }
@@ -128,7 +129,10 @@ export class AuthService {
     const userData: ModelCreateUserData = {
       id: supabaseUser.id,
       email: supabaseUser.email ?? '',
-      name: (supabaseUser.user_metadata as any)?.['full_name'] || supabaseUser.email?.split('@')[0] || '',
+      name:
+        supabaseUser.user_metadata?.full_name ??
+        supabaseUser.email?.split('@')[0] ??
+        '',
     };
 
     return this.userModel.create(userData);
@@ -142,7 +146,7 @@ export class AuthService {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/auth/google/callback`,
+        redirectTo: `${process.env.BACKEND_URL ?? 'http://localhost:4000'}/api/auth/google/callback`,
       },
     });
 
@@ -153,11 +157,15 @@ export class AuthService {
     return data.url;
   }
 
-  async handleGoogleCallback(code: string, _state?: string): Promise<{ user: any; session: any }> {
+  async handleGoogleCallback(
+    code: string
+  ): Promise<{ user: User; session: Session }> {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error || !data.session || !data.user) {
-      throw new ConflictError(`Google OAuth callback failed: ${error?.message}`);
+      throw new ConflictError(
+        `Google OAuth callback failed: ${error?.message}`
+      );
     }
 
     // Check if user exists in database
@@ -168,7 +176,10 @@ export class AuthService {
       const userData: ModelCreateUserData = {
         id: data.user.id,
         email: data.user.email!,
-        name: data.user.user_metadata?.['full_name'] || data.user.email?.split('@')[0] || '',
+        name:
+          data.user.user_metadata?.['full_name'] ||
+          data.user.email?.split('@')[0] ||
+          '',
         role: 'MEMBER' as const,
       };
 
@@ -183,7 +194,7 @@ export class AuthService {
 
   async logout(accessToken: string): Promise<void> {
     const { error } = await supabase.auth.admin.signOut(accessToken);
-    
+
     if (error) {
       throw new UnauthorizedError('Failed to logout');
     }
@@ -195,40 +206,62 @@ export class AuthService {
     adminPassword: string;
     adminFirstName: string;
     adminLastName: string;
-  }): Promise<{ organization: any; user: User; session: any }> {
-    let supabaseUser = null;
-    let organization = null;
-    
+  }): Promise<{ organization: Organization; user: User; session: Session | null }> {
+    let supabaseUserId: string | null = null;
+    let organization: Organization | null = null;
+    let transactionCompleted = false;
+
     try {
       // 1. Create Supabase auth user first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: data.adminEmail,
-        password: data.adminPassword,
-        email_confirm: true,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          email: data.adminEmail,
+          password: data.adminPassword,
+          email_confirm: true,
+        });
 
       if (authError || !authData.user) {
-        throw new ConflictError(`Failed to create auth user: ${authError?.message}`);
+        throw new ConflictError(
+          `Failed to create auth user: ${authError?.message}`
+        );
       }
 
-      supabaseUser = authData.user;
+      supabaseUserId = authData.user.id;
+      const authUserId = authData.user.id;
 
-      // 2. Create organization using model
-      organization = await this.organizationModel.create({
-        name: data.organizationName,
-        slug: data.organizationName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      // 2-3. Create organization, admin user, and org membership atomically
+      const result = await withTransactionModels(async ({ models }) => {
+        const createdOrg = await models.organizationModel.create({
+          name: data.organizationName,
+          slug: data.organizationName
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, ''),
+        });
+
+        const createdUser = await models.userModel.create({
+          id: authUserId,
+          email: data.adminEmail,
+          name: `${data.adminFirstName} ${data.adminLastName}`,
+          role: 'ADMIN',
+        });
+
+        await models.orgMemberModel.create({
+          organizationId: createdOrg.id,
+          userId: createdUser.id,
+          role: OrgRole.OWNER,
+        });
+
+        return { organization: createdOrg, user: createdUser };
       });
 
-      // 3. Create admin user using model
-      const user = await this.userModel.create({
-        id: supabaseUser.id,
-        email: data.adminEmail,
-        name: `${data.adminFirstName} ${data.adminLastName}`,
-        role: 'ADMIN',
-      });
+      organization = result.organization;
+      const user = result.user;
+
+      transactionCompleted = true;
 
       // 4. Update Supabase user metadata with organization ID
-      await supabase.auth.admin.updateUserById(supabaseUser.id, {
+      await supabase.auth.admin.updateUserById(authUserId, {
         user_metadata: {
           organizationId: organization.id,
           role: 'ADMIN',
@@ -238,21 +271,13 @@ export class AuthService {
       return {
         organization,
         user,
-        session: (authData as any).session || null,
+        session: null,
       };
     } catch (error) {
-      // If creation fails, clean up created resources
-      if (organization) {
+      // If DB transaction failed after creating Supabase user, attempt cleanup of Supabase user
+      if (!transactionCompleted && supabaseUserId) {
         try {
-          await this.organizationModel.delete(organization.id);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup organization:', cleanupError);
-        }
-      }
-      
-      if (supabaseUser) {
-        try {
-          await supabase.auth.admin.deleteUser(supabaseUser.id);
+          await supabase.auth.admin.deleteUser(supabaseUserId);
         } catch (cleanupError) {
           console.error('Failed to cleanup Supabase user:', cleanupError);
         }

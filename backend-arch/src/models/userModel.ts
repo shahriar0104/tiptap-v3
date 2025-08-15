@@ -19,7 +19,9 @@ export interface UpdateUserData {
 
 export interface UserModel {
   findById(id: string): Promise<User | null>;
-  findByIdWithMemberships(id: string): Promise<(User & { memberships: any[] }) | null>;
+  findByIdWithMemberships(
+    id: string
+  ): Promise<(User & { memberships: any[] }) | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: CreateUserData): Promise<User>;
   update(id: string, data: UpdateUserData): Promise<User>;
@@ -29,7 +31,7 @@ export interface UserModel {
 }
 
 export class UserModelImpl implements UserModel {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient | Prisma.TransactionClient) {}
 
   async findById(id: string): Promise<User | null> {
     const findByIdValidator = Prisma.validator<Prisma.UserFindUniqueArgs>()({
@@ -39,7 +41,9 @@ export class UserModelImpl implements UserModel {
     return this.prisma.user.findUnique(findByIdValidator);
   }
 
-  async findByIdWithMemberships(id: string): Promise<(User & { memberships: any[] }) | null> {
+  async findByIdWithMemberships(
+    id: string
+  ): Promise<(User & { memberships: any[] }) | null> {
     const findByIdValidator = Prisma.validator<Prisma.UserFindUniqueArgs>()({
       where: { id },
       include: {
@@ -69,8 +73,8 @@ export class UserModelImpl implements UserModel {
         email: data.email,
         name: data.name ?? null,
         avatar: data.avatar ?? null,
-        role: data.role!,
-        isActive: data.isActive!,
+        ...(data.role !== undefined && { role: data.role }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
 
@@ -79,7 +83,7 @@ export class UserModelImpl implements UserModel {
 
   async update(id: string, data: UpdateUserData): Promise<User> {
     const updateData: Record<string, unknown> = {};
-    
+
     if (data.email !== undefined) updateData['email'] = data.email;
     if (data.name !== undefined) updateData['name'] = data.name;
     if (data.avatar !== undefined) updateData['avatar'] = data.avatar;

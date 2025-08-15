@@ -12,38 +12,43 @@ export interface SlideModel {
 }
 
 export class SlideModelImpl implements SlideModel {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient | Prisma.TransactionClient) {}
 
   async create(data: CreateSlideData): Promise<Slide> {
     const createValidator = Prisma.validator<Prisma.SlideCreateArgs>()({
       data: {
         presentation: {
-          connect: { id: data.presentationId }
+          connect: { id: data.presentationId },
         },
         ...(data.agendaItemId && {
           agendaItem: {
-            connect: { id: data.agendaItemId }
-          }
+            connect: { id: data.agendaItemId },
+          },
         }),
         kind: data.kind,
         title: data.title ?? null,
-        bodyJson: data.bodyJson,
-        orderIndex: data.orderIndex
+        ...(data.bodyJson !== undefined && {
+          bodyJson:
+            data.bodyJson === null
+              ? Prisma.JsonNull
+              : (data.bodyJson as Prisma.InputJsonValue),
+        }),
+        orderIndex: data.orderIndex,
       },
       include: {
         presentation: {
           select: {
             id: true,
             boardMeetingId: true,
-          }
+          },
         },
         agendaItem: {
           select: {
             id: true,
             title: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return this.prisma.slide.create(createValidator);
@@ -57,50 +62,52 @@ export class SlideModelImpl implements SlideModel {
           select: {
             id: true,
             boardMeetingId: true,
-          }
+          },
         },
         agendaItem: {
           select: {
             id: true,
             title: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return this.prisma.slide.findUnique(findByIdValidator);
   }
 
   async findByPresentation(presentationId: string): Promise<Slide[]> {
-    const findByPresentationValidator = Prisma.validator<Prisma.SlideFindManyArgs>()({
-      where: { presentationId },
-      include: {
-        agendaItem: {
-          select: {
-            id: true,
-            title: true,
-          }
-        }
-      },
-      orderBy: { orderIndex: 'asc' }
-    });
+    const findByPresentationValidator =
+      Prisma.validator<Prisma.SlideFindManyArgs>()({
+        where: { presentationId },
+        include: {
+          agendaItem: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { orderIndex: 'asc' },
+      });
 
     return this.prisma.slide.findMany(findByPresentationValidator);
   }
 
   async findByAgendaItem(agendaItemId: string): Promise<Slide[]> {
-    const findByAgendaItemValidator = Prisma.validator<Prisma.SlideFindManyArgs>()({
-      where: { agendaItemId },
-      include: {
-        presentation: {
-          select: {
-            id: true,
-            boardMeetingId: true,
-          }
-        }
-      },
-      orderBy: { orderIndex: 'asc' }
-    });
+    const findByAgendaItemValidator =
+      Prisma.validator<Prisma.SlideFindManyArgs>()({
+        where: { agendaItemId },
+        include: {
+          presentation: {
+            select: {
+              id: true,
+              boardMeetingId: true,
+            },
+          },
+        },
+        orderBy: { orderIndex: 'asc' },
+      });
 
     return this.prisma.slide.findMany(findByAgendaItemValidator);
   }
@@ -111,33 +118,39 @@ export class SlideModelImpl implements SlideModel {
       data: {
         ...(data.kind !== undefined && { kind: data.kind }),
         ...(data.title !== undefined && { title: data.title }),
-        ...(data.bodyJson !== undefined && { bodyJson: data.bodyJson }),
-        ...(data.orderIndex !== undefined && { orderIndex: data.orderIndex }),
-        ...(data.agendaItemId !== undefined && data.agendaItemId !== null && {
-          agendaItem: {
-            connect: { id: data.agendaItemId }
-          }
+        ...(data.bodyJson !== undefined && {
+          bodyJson:
+            data.bodyJson === null
+              ? Prisma.JsonNull
+              : (data.bodyJson as Prisma.InputJsonValue),
         }),
+        ...(data.orderIndex !== undefined && { orderIndex: data.orderIndex }),
+        ...(data.agendaItemId !== undefined &&
+          data.agendaItemId !== null && {
+            agendaItem: {
+              connect: { id: data.agendaItemId },
+            },
+          }),
         ...(data.agendaItemId === null && {
           agendaItem: {
-            disconnect: true
-          }
-        })
+            disconnect: true,
+          },
+        }),
       },
       include: {
         presentation: {
           select: {
             id: true,
             boardMeetingId: true,
-          }
+          },
         },
         agendaItem: {
           select: {
             id: true,
             title: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return this.prisma.slide.update(updateValidator);
@@ -145,22 +158,30 @@ export class SlideModelImpl implements SlideModel {
 
   async delete(id: string): Promise<void> {
     await this.prisma.slide.delete({
-      where: { id }
+      where: { id },
     });
   }
 
-  async reorderSlides(presentationId: string, slideIds: string[]): Promise<void> {
-    // Use transaction to update all slide orders atomically
-    await this.prisma.$transaction(
-      slideIds.map((slideId, index) =>
-        this.prisma.slide.update({
-          where: { 
-            id: slideId,
-            presentationId // Ensure slide belongs to the presentation
-          },
-          data: { orderIndex: index + 1 }
-        })
-      )
+  async reorderSlides(
+    presentationId: string,
+    slideIds: string[]
+  ): Promise<void> {
+    // Update all slide orders atomically. If we have a full PrismaClient, use $transaction; otherwise parallel updates within the existing tx.
+    const updates = slideIds.map((slideId, index) =>
+      this.prisma.slide.update({
+        where: {
+          id: slideId,
+          presentationId,
+        },
+        data: { orderIndex: index + 1 },
+      })
     );
+
+    // Narrow type: TransactionClient doesn't have $transaction
+    if ('$transaction' in this.prisma) {
+      await this.prisma.$transaction(updates);
+    } else {
+      await Promise.all(updates);
+    }
   }
 }

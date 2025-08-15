@@ -1,6 +1,10 @@
 import { Upload } from '@prisma/client';
-import { UploadModel } from '../models/uploadModel';
-import { CreateUploadData, UpdateUploadData, PaginatedResponse } from '../types';
+import { withModels, withTransactionModels } from '../utils/transaction';
+import {
+  CreateUploadData,
+  UpdateUploadData,
+  PaginatedResponse,
+} from '../types';
 import { NotFoundError, ValidationError } from '../utils/errors';
 
 export interface UploadService {
@@ -13,7 +17,7 @@ export interface UploadService {
 }
 
 export class UploadServiceImpl implements UploadService {
-  constructor(private uploadModel: UploadModel) {}
+  constructor() {}
 
   async createUpload(data: CreateUploadData, userId: string): Promise<Upload> {
     // Validate required fields
@@ -24,10 +28,12 @@ export class UploadServiceImpl implements UploadService {
     // Set the uploadedById to the current user
     const uploadData: CreateUploadData = {
       ...data,
-      uploadedById: userId
+      uploadedById: userId,
     };
 
-    return this.uploadModel.create(uploadData);
+    return withTransactionModels(async ({ models }) => {
+      return models.uploadModel.create(uploadData);
+    });
   }
 
   async getUploadById(id: string): Promise<Upload> {
@@ -35,7 +41,9 @@ export class UploadServiceImpl implements UploadService {
       throw new ValidationError('Upload ID is required');
     }
 
-    const upload = await this.uploadModel.findById(id);
+    const upload = await withModels(async ({ models }) =>
+      models.uploadModel.findById(id)
+    );
     if (!upload) {
       throw new NotFoundError('Upload not found');
     }
@@ -49,15 +57,18 @@ export class UploadServiceImpl implements UploadService {
     }
 
     const skip = (page - 1) * limit;
-    const result = await this.uploadModel.findMany(skip, limit);
+    const result = await withModels(async ({ models }) =>
+      models.uploadModel.findMany(skip, limit)
+    );
 
     return {
       data: result.uploads,
       pagination: {
         page,
         limit,
-        total: result.total
-      }
+        total: result.total,
+        totalPages: Math.ceil(result.total / limit),
+      },
     };
   }
 
@@ -71,10 +82,14 @@ export class UploadServiceImpl implements UploadService {
 
     // Validate update data
     if (Object.keys(data).length === 0) {
-      throw new ValidationError('At least one field must be provided for update');
+      throw new ValidationError(
+        'At least one field must be provided for update'
+      );
     }
 
-    return this.uploadModel.update(id, data);
+    return withTransactionModels(async ({ models }) => {
+      return models.uploadModel.update(id, data);
+    });
   }
 
   async deleteUpload(id: string): Promise<void> {
@@ -82,10 +97,14 @@ export class UploadServiceImpl implements UploadService {
       throw new ValidationError('Upload ID is required');
     }
 
-    // Check if upload exists
-    await this.getUploadById(id);
-
-    await this.uploadModel.delete(id);
+    // Ensure existence and delete atomically
+    await withTransactionModels(async ({ models }) => {
+      const existing = await models.uploadModel.findById(id);
+      if (!existing) {
+        throw new NotFoundError('Upload not found');
+      }
+      await models.uploadModel.delete(id);
+    });
   }
 
   async getUserUploads(userId: string): Promise<Upload[]> {
@@ -93,6 +112,8 @@ export class UploadServiceImpl implements UploadService {
       throw new ValidationError('User ID is required');
     }
 
-    return this.uploadModel.findByUploadedBy(userId);
+    return withModels(async ({ models }) =>
+      models.uploadModel.findByUploadedBy(userId)
+    );
   }
 }

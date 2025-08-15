@@ -7,7 +7,11 @@ import { cookieConfig, COOKIE_NAMES } from '../config/cookies';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  login = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { email, password } = req.body;
 
@@ -37,7 +41,11 @@ export class AuthController {
     }
   };
 
-  getCurrentUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getCurrentUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       sendSuccess(res, user, 'User profile retrieved successfully');
@@ -46,19 +54,34 @@ export class AuthController {
     }
   };
 
-  updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateProfile = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const userId = (req as AuthenticatedRequest).user.id;
-      const updateData = req.body as { firstName?: string; lastName?: string; email?: string };
+      const updateData = req.body as {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+      };
 
-      const updatedUser = await this.authService.updateUserProfile(userId, updateData);
+      const updatedUser = await this.authService.updateUserProfile(
+        userId,
+        updateData
+      );
       sendSuccess(res, updatedUser, 'Profile updated successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  logout = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  logout = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       // Clear auth cookies
       res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, {
@@ -76,24 +99,33 @@ export class AuthController {
     }
   };
 
-
-  getOrganizationUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getOrganizationUsers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
-      
+
       if (!user.organizationId) {
         sendError(res, 'User is not part of an organization', 400);
         return;
       }
 
-      const users = await this.authService.getUsersByOrganization(user.organizationId);
+      const users = await this.authService.getUsersByOrganization(
+        user.organizationId
+      );
       sendSuccess(res, users, 'Organization users retrieved successfully');
     } catch (error) {
       next(error);
     }
   };
 
-  googleAuth = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  googleAuth = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const authUrl = await this.authService.getGoogleAuthUrl();
       res.redirect(authUrl);
@@ -102,23 +134,27 @@ export class AuthController {
     }
   };
 
-  googleCallback = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  googleCallback = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
-      const { code, state } = req.query as { code?: string; state?: string };
-      
+      const { code } = req.query as { code?: string };
+
       if (!code) {
         sendError(res, 'Authorization code not provided', 400);
         return;
       }
 
-      const result = await this.authService.handleGoogleCallback(code, state);
-      
+      const result = await this.authService.handleGoogleCallback(code);
+
       // Set authentication cookies
       res.cookie(COOKIE_NAMES.ACCESS_TOKEN, result.session.access_token, {
         ...cookieConfig,
         maxAge: 15 * 60 * 1000, // 15 minutes
       });
-      
+
       if (result.session.refresh_token) {
         res.cookie(COOKIE_NAMES.REFRESH_TOKEN, result.session.refresh_token, {
           ...cookieConfig,
@@ -134,10 +170,14 @@ export class AuthController {
     }
   };
 
-  logoutUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  logoutUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const accessToken = req.cookies[COOKIE_NAMES.ACCESS_TOKEN];
-      
+
       if (accessToken) {
         await this.authService.logout(accessToken);
       }
@@ -151,7 +191,7 @@ export class AuthController {
         ...cookieConfig,
         maxAge: 0,
       });
-      
+
       sendSuccess(res, null, 'Successfully logged out');
     } catch (error) {
       next(error);

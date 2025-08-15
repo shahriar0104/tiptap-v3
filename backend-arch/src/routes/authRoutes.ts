@@ -165,7 +165,8 @@ router.put('/profile', authController.updateProfile);
  *       401:
  *         description: Authentication required
  */
-router.get('/organization/users', 
+router.get(
+  '/organization/users',
   authMiddleware.requireOrganization,
   authController.getOrganizationUsers
 );

@@ -1,28 +1,40 @@
 import { EditorContent } from '@prisma/client';
-import { EditorContentModel } from '../models/editorContentModel';
+import { withModels, withTransactionModels } from '../utils/transaction';
 import { CreateEditorContentData, UpdateEditorContentData } from '../types';
 import { NotFoundError, ValidationError } from '../utils/errors';
 
 export interface EditorContentService {
   createEditorContent(data: CreateEditorContentData): Promise<EditorContent>;
   getEditorContentById(id: string): Promise<EditorContent>;
-  getEditorContentByBoardMeeting(boardMeetingId: string): Promise<EditorContent[]>;
+  getEditorContentByBoardMeeting(
+    boardMeetingId: string
+  ): Promise<EditorContent[]>;
   getLatestEditorContent(boardMeetingId: string): Promise<EditorContent | null>;
-  updateEditorContent(id: string, data: UpdateEditorContentData): Promise<EditorContent>;
-  createNewVersion(boardMeetingId: string, contentJson: any): Promise<EditorContent>;
+  updateEditorContent(
+    id: string,
+    data: UpdateEditorContentData
+  ): Promise<EditorContent>;
+  createNewVersion(
+    boardMeetingId: string,
+    contentJson: any
+  ): Promise<EditorContent>;
   deleteEditorContent(id: string): Promise<void>;
 }
 
 export class EditorContentServiceImpl implements EditorContentService {
-  constructor(private editorContentModel: EditorContentModel) {}
+  constructor() {}
 
-  async createEditorContent(data: CreateEditorContentData): Promise<EditorContent> {
+  async createEditorContent(
+    data: CreateEditorContentData
+  ): Promise<EditorContent> {
     // Validate required fields
     if (!data.boardMeetingId || !data.contentJson) {
       throw new ValidationError('boardMeetingId and contentJson are required');
     }
 
-    return this.editorContentModel.create(data);
+    return withTransactionModels(async ({ models }) => {
+      return models.editorContentModel.create(data);
+    });
   }
 
   async getEditorContentById(id: string): Promise<EditorContent> {
@@ -30,7 +42,9 @@ export class EditorContentServiceImpl implements EditorContentService {
       throw new ValidationError('EditorContent ID is required');
     }
 
-    const content = await this.editorContentModel.findById(id);
+    const content = await withModels(async ({ models }) =>
+      models.editorContentModel.findById(id)
+    );
     if (!content) {
       throw new NotFoundError('EditorContent not found');
     }
@@ -38,23 +52,34 @@ export class EditorContentServiceImpl implements EditorContentService {
     return content;
   }
 
-  async getEditorContentByBoardMeeting(boardMeetingId: string): Promise<EditorContent[]> {
+  async getEditorContentByBoardMeeting(
+    boardMeetingId: string
+  ): Promise<EditorContent[]> {
     if (!boardMeetingId) {
       throw new ValidationError('Board meeting ID is required');
     }
 
-    return this.editorContentModel.findByBoardMeeting(boardMeetingId);
+    return withModels(async ({ models }) =>
+      models.editorContentModel.findByBoardMeeting(boardMeetingId)
+    );
   }
 
-  async getLatestEditorContent(boardMeetingId: string): Promise<EditorContent | null> {
+  async getLatestEditorContent(
+    boardMeetingId: string
+  ): Promise<EditorContent | null> {
     if (!boardMeetingId) {
       throw new ValidationError('Board meeting ID is required');
     }
 
-    return this.editorContentModel.findLatestByBoardMeeting(boardMeetingId);
+    return withModels(async ({ models }) =>
+      models.editorContentModel.findLatestByBoardMeeting(boardMeetingId)
+    );
   }
 
-  async updateEditorContent(id: string, data: UpdateEditorContentData): Promise<EditorContent> {
+  async updateEditorContent(
+    id: string,
+    data: UpdateEditorContentData
+  ): Promise<EditorContent> {
     if (!id) {
       throw new ValidationError('EditorContent ID is required');
     }
@@ -64,26 +89,38 @@ export class EditorContentServiceImpl implements EditorContentService {
 
     // Validate update data
     if (Object.keys(data).length === 0) {
-      throw new ValidationError('At least one field must be provided for update');
+      throw new ValidationError(
+        'At least one field must be provided for update'
+      );
     }
 
-    return this.editorContentModel.update(id, data);
+    return withTransactionModels(async ({ models }) => {
+      return models.editorContentModel.update(id, data);
+    });
   }
 
-  async createNewVersion(boardMeetingId: string, contentJson: any): Promise<EditorContent> {
+  async createNewVersion(
+    boardMeetingId: string,
+    contentJson: any
+  ): Promise<EditorContent> {
     if (!boardMeetingId || !contentJson) {
       throw new ValidationError('boardMeetingId and contentJson are required');
     }
 
-    // Get the latest version number
-    const latestContent = await this.editorContentModel.findLatestByBoardMeeting(boardMeetingId);
-    const nextVersion = latestContent ? latestContent.version + 1 : 1;
+    return withTransactionModels(async ({ models }) => {
+      // Get the latest version number inside the transaction for consistency
+      const latestContent =
+        await models.editorContentModel.findLatestByBoardMeeting(
+          boardMeetingId
+        );
+      const nextVersion = latestContent ? latestContent.version + 1 : 1;
 
-    // Create new version
-    return this.editorContentModel.create({
-      boardMeetingId,
-      contentJson,
-      version: nextVersion
+      // Create new version
+      return models.editorContentModel.create({
+        boardMeetingId,
+        contentJson,
+        version: nextVersion,
+      });
     });
   }
 
@@ -92,9 +129,13 @@ export class EditorContentServiceImpl implements EditorContentService {
       throw new ValidationError('EditorContent ID is required');
     }
 
-    // Check if content exists
-    await this.getEditorContentById(id);
-
-    await this.editorContentModel.delete(id);
+    // Ensure existence and delete atomically
+    await withTransactionModels(async ({ models }) => {
+      const content = await models.editorContentModel.findById(id);
+      if (!content) {
+        throw new NotFoundError('EditorContent not found');
+      }
+      await models.editorContentModel.delete(id);
+    });
   }
 }

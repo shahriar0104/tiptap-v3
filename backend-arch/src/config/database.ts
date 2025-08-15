@@ -24,7 +24,10 @@ class DatabaseConnection {
         }
 
         DatabaseConnection.instance = new PrismaClient({
-          log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+          log:
+            process.env.NODE_ENV === 'development'
+              ? ['query', 'info', 'warn', 'error']
+              : ['error'],
           datasources: {
             db: {
               url: databaseUrl,

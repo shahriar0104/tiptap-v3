@@ -4,13 +4,16 @@ export interface OrganizationModel {
   create(data: Prisma.OrganizationCreateInput): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
   findByName(name: string): Promise<Organization | null>;
-  update(id: string, data: Prisma.OrganizationUpdateInput): Promise<Organization>;
+  update(
+    id: string,
+    data: Prisma.OrganizationUpdateInput
+  ): Promise<Organization>;
   delete(id: string): Promise<Organization>;
   findAll(): Promise<Organization[]>;
 }
 
 export class OrganizationModelImpl implements OrganizationModel {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient | Prisma.TransactionClient) {}
 
   async create(data: Prisma.OrganizationCreateInput): Promise<Organization> {
     return this.prisma.organization.create({
@@ -30,7 +33,10 @@ export class OrganizationModelImpl implements OrganizationModel {
     });
   }
 
-  async update(id: string, data: Prisma.OrganizationUpdateInput): Promise<Organization> {
+  async update(
+    id: string,
+    data: Prisma.OrganizationUpdateInput
+  ): Promise<Organization> {
     return this.prisma.organization.update({
       where: { id },
       data,

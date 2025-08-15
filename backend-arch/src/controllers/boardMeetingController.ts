@@ -2,17 +2,21 @@ import { Request, Response, NextFunction } from 'express';
 import type { BoardMeetingService } from '../services/boardMeetingService';
 import { AuthenticatedRequest } from '../types';
 import { sendSuccess, sendPaginatedResponse } from '../utils/response';
-import { 
-  CreateBoardMeetingInput, 
-  UpdateBoardMeetingInput, 
+import {
+  CreateBoardMeetingInput,
+  UpdateBoardMeetingInput,
   GetBoardMeetingParams,
-  GetBoardMeetingsQuery 
+  GetBoardMeetingsQuery,
 } from '../validators/boardMeeting';
 
 export class BoardMeetingController {
   constructor(private boardMeetingService: BoardMeetingService) {}
 
-  createBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const user = (req as AuthenticatedRequest).user;
       const data = req.body as CreateBoardMeetingInput;
@@ -23,14 +27,21 @@ export class BoardMeetingController {
         meetingDate: data.meetingDate ? new Date(data.meetingDate) : undefined,
       };
 
-      const meeting = await this.boardMeetingService.createBoardMeeting(meetingData, user.id);
+      const meeting = await this.boardMeetingService.createBoardMeeting(
+        meetingData,
+        user.id
+      );
       sendSuccess(res, meeting, 'Board meeting created successfully', 201);
     } catch (error) {
       next(error);
     }
   };
 
-  getBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params as GetBoardMeetingParams;
 
@@ -41,7 +52,11 @@ export class BoardMeetingController {
     }
   };
 
-  getBoardMeetings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getBoardMeetings = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const query = req.query as GetBoardMeetingsQuery;
 
@@ -68,7 +83,11 @@ export class BoardMeetingController {
     }
   };
 
-  updateBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params as GetBoardMeetingParams;
       const data = req.body as UpdateBoardMeetingInput;
@@ -89,7 +108,11 @@ export class BoardMeetingController {
     }
   };
 
-  deleteBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteBoardMeeting = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params as GetBoardMeetingParams;
 
@@ -100,42 +123,22 @@ export class BoardMeetingController {
     }
   };
 
-  updateMeetingStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateMeetingStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { id } = req.params as GetBoardMeetingParams;
-      const { status } = req.body as { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' };
+      const { status } = req.body as {
+        status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+      };
 
       const meeting = await this.boardMeetingService.updateMeetingStatus(
         id,
         status
       );
       sendSuccess(res, meeting, 'Meeting status updated successfully');
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getOrganizationMeetings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { organizationId } = req.params;
-
-      if (!organizationId) {
-        throw new Error('Organization ID is required');
-      }
-
-      const meetings = await this.boardMeetingService.getBoardMeetingsByOrganization(organizationId);
-      sendSuccess(res, meetings, 'Organization meetings retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  createOrganizationWithBoardMeeting = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const data = req.body;
-      
-      const result = await this.boardMeetingService.createOrganizationWithBoardMeeting(data);
-      sendSuccess(res, result, 'Organization and board meeting created successfully', 201);
     } catch (error) {
       next(error);
     }

@@ -13,15 +13,15 @@ export const validateRequest = (schemas: ValidationSchemas | ZodSchema) => {
     try {
       // If it's a single schema, assume it's for the entire request object
       if ('parse' in schemas) {
-        (schemas as ZodSchema).parse({
+        schemas.parse({
           body: req.body,
           query: req.query,
           params: req.params,
         });
       } else {
         // Validate individual parts
-        const { body, params, query } = schemas as ValidationSchemas;
-        
+        const { body, params, query } = schemas;
+
         if (body) {
           body.parse(req.body);
         }
@@ -35,7 +35,9 @@ export const validateRequest = (schemas: ValidationSchemas | ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
+        const errorMessages = error.errors.map(
+          err => `${err.path.join('.')}: ${err.message}`
+        );
         next(new ValidationError(errorMessages.join(', ')));
       } else {
         next(error);

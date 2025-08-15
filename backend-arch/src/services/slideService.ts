@@ -1,5 +1,5 @@
 import { Slide } from '@prisma/client';
-import { SlideModel } from '../models/slideModel';
+import { withModels, withTransactionModels } from '../utils/transaction';
 import { CreateSlideData, UpdateSlideData } from '../types';
 import { NotFoundError, ValidationError } from '../utils/errors';
 
@@ -14,12 +14,14 @@ export interface SlideService {
 }
 
 export class SlideServiceImpl implements SlideService {
-  constructor(private slideModel: SlideModel) {}
+  constructor() {}
 
   async createSlide(data: CreateSlideData): Promise<Slide> {
     // Validate required fields
     if (!data.presentationId || !data.kind || data.orderIndex === undefined) {
-      throw new ValidationError('presentationId, kind, and orderIndex are required');
+      throw new ValidationError(
+        'presentationId, kind, and orderIndex are required'
+      );
     }
 
     // Validate slide kind
@@ -28,7 +30,9 @@ export class SlideServiceImpl implements SlideService {
       throw new ValidationError('Invalid slide kind');
     }
 
-    return this.slideModel.create(data);
+    return withTransactionModels(async ({ models }) => {
+      return models.slideModel.create(data);
+    });
   }
 
   async getSlideById(id: string): Promise<Slide> {
@@ -36,7 +40,9 @@ export class SlideServiceImpl implements SlideService {
       throw new ValidationError('Slide ID is required');
     }
 
-    const slide = await this.slideModel.findById(id);
+    const slide = await withModels(async ({ models }) =>
+      models.slideModel.findById(id)
+    );
     if (!slide) {
       throw new NotFoundError('Slide not found');
     }
@@ -49,7 +55,9 @@ export class SlideServiceImpl implements SlideService {
       throw new ValidationError('Presentation ID is required');
     }
 
-    return this.slideModel.findByPresentation(presentationId);
+    return withModels(async ({ models }) =>
+      models.slideModel.findByPresentation(presentationId)
+    );
   }
 
   async getSlidesByAgendaItem(agendaItemId: string): Promise<Slide[]> {
@@ -57,7 +65,9 @@ export class SlideServiceImpl implements SlideService {
       throw new ValidationError('Agenda item ID is required');
     }
 
-    return this.slideModel.findByAgendaItem(agendaItemId);
+    return withModels(async ({ models }) =>
+      models.slideModel.findByAgendaItem(agendaItemId)
+    );
   }
 
   async updateSlide(id: string, data: UpdateSlideData): Promise<Slide> {
@@ -70,7 +80,9 @@ export class SlideServiceImpl implements SlideService {
 
     // Validate update data
     if (Object.keys(data).length === 0) {
-      throw new ValidationError('At least one field must be provided for update');
+      throw new ValidationError(
+        'At least one field must be provided for update'
+      );
     }
 
     // Validate slide kind if provided
@@ -81,7 +93,9 @@ export class SlideServiceImpl implements SlideService {
       }
     }
 
-    return this.slideModel.update(id, data);
+    return withTransactionModels(async ({ models }) => {
+      return models.slideModel.update(id, data);
+    });
   }
 
   async deleteSlide(id: string): Promise<void> {
@@ -89,27 +103,39 @@ export class SlideServiceImpl implements SlideService {
       throw new ValidationError('Slide ID is required');
     }
 
-    // Check if slide exists
-    await this.getSlideById(id);
-
-    await this.slideModel.delete(id);
+    // Ensure existence and delete atomically
+    await withTransactionModels(async ({ models }) => {
+      const existing = await models.slideModel.findById(id);
+      if (!existing) {
+        throw new NotFoundError('Slide not found');
+      }
+      await models.slideModel.delete(id);
+    });
   }
 
-  async reorderSlides(presentationId: string, slideIds: string[]): Promise<void> {
+  async reorderSlides(
+    presentationId: string,
+    slideIds: string[]
+  ): Promise<void> {
     if (!presentationId || !slideIds || slideIds.length === 0) {
       throw new ValidationError('presentationId and slideIds are required');
     }
 
-    // Validate that all slides belong to the presentation
-    const existingSlides = await this.slideModel.findByPresentation(presentationId);
-    const existingSlideIds = existingSlides.map(slide => slide.id);
-    
-    for (const slideId of slideIds) {
-      if (!existingSlideIds.includes(slideId)) {
-        throw new ValidationError(`Slide ${slideId} does not belong to presentation ${presentationId}`);
-      }
-    }
+    await withTransactionModels(async ({ models }) => {
+      // Validate that all slides belong to the presentation
+      const existingSlides =
+        await models.slideModel.findByPresentation(presentationId);
+      const existingSlideIds = existingSlides.map(slide => slide.id);
 
-    await this.slideModel.reorderSlides(presentationId, slideIds);
+      for (const slideId of slideIds) {
+        if (!existingSlideIds.includes(slideId)) {
+          throw new ValidationError(
+            `Slide ${slideId} does not belong to presentation ${presentationId}`
+          );
+        }
+      }
+
+      await models.slideModel.reorderSlides(presentationId, slideIds);
+    });
   }
 }

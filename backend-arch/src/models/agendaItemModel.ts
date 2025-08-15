@@ -1,4 +1,9 @@
-import { PrismaClient, Prisma, AgendaItem, AgendaItemStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Prisma,
+  AgendaItem,
+  AgendaItemStatus,
+} from '@prisma/client';
 import { CreateAgendaItemData, UpdateAgendaItemData } from '../types';
 
 type AgendaItemWithRelations = Prisma.AgendaItemGetPayload<{
@@ -15,64 +20,76 @@ type AgendaItemWithRelations = Prisma.AgendaItemGetPayload<{
 
 export interface AgendaItemModel {
   findById(id: string): Promise<AgendaItemWithRelations | null>;
-  findByAgendaGroupId(agendaGroupId: string): Promise<AgendaItemWithRelations[]>;
+  findByAgendaGroupId(
+    agendaGroupId: string
+  ): Promise<AgendaItemWithRelations[]>;
   create(data: CreateAgendaItemData): Promise<AgendaItem>;
   update(id: string, data: UpdateAgendaItemData): Promise<AgendaItem>;
   delete(id: string): Promise<AgendaItem>;
-  reorderItems(agendaGroupId: string, itemOrders: Array<{ id: string; order: number }>): Promise<void>;
+  reorderItems(
+    agendaGroupId: string,
+    itemOrders: Array<{ id: string; order: number }>
+  ): Promise<void>;
   getMaxOrder(agendaGroupId: string): Promise<number>;
   updateStatus(id: string, status: AgendaItemStatus): Promise<AgendaItem>;
-  findByBoardMeetingId(boardMeetingId: string): Promise<AgendaItemWithRelations[]>;
+  findByBoardMeetingId(
+    boardMeetingId: string
+  ): Promise<AgendaItemWithRelations[]>;
 }
 
 export class AgendaItemModelImpl implements AgendaItemModel {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient | Prisma.TransactionClient) {}
 
   async findById(id: string): Promise<AgendaItemWithRelations | null> {
-    const findByIdValidator = Prisma.validator<Prisma.AgendaItemFindUniqueArgs>()({
-      where: { id },
-      include: {
-        agendaGroup: {
-          select: {
-            id: true,
-            title: true,
-            boardMeetingId: true,
-            boardMeeting: {
-              select: {
-                id: true,
-                title: true,
-                organizationId: true,
+    const findByIdValidator =
+      Prisma.validator<Prisma.AgendaItemFindUniqueArgs>()({
+        where: { id },
+        include: {
+          agendaGroup: {
+            select: {
+              id: true,
+              title: true,
+              boardMeetingId: true,
+              boardMeeting: {
+                select: {
+                  id: true,
+                  title: true,
+                  organizationId: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
     return this.prisma.agendaItem.findUnique(findByIdValidator);
   }
 
-  async findByAgendaGroupId(agendaGroupId: string): Promise<AgendaItemWithRelations[]> {
-    const findManyValidator = Prisma.validator<Prisma.AgendaItemFindManyArgs>()({
-      where: { agendaGroupId },
-      include: {
-        agendaGroup: {
-          select: {
-            id: true,
-            title: true,
-            boardMeetingId: true,
-            boardMeeting: {
-              select: {
-                id: true,
-                title: true,
-                organizationId: true,
+  async findByAgendaGroupId(
+    agendaGroupId: string
+  ): Promise<AgendaItemWithRelations[]> {
+    const findManyValidator = Prisma.validator<Prisma.AgendaItemFindManyArgs>()(
+      {
+        where: { agendaGroupId },
+        include: {
+          agendaGroup: {
+            select: {
+              id: true,
+              title: true,
+              boardMeetingId: true,
+              boardMeeting: {
+                select: {
+                  id: true,
+                  title: true,
+                  organizationId: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { order: 'asc' },
-    });
+        orderBy: { order: 'asc' },
+      }
+    );
 
     return this.prisma.agendaItem.findMany(findManyValidator);
   }
@@ -109,7 +126,7 @@ export class AgendaItemModelImpl implements AgendaItemModel {
 
   async update(id: string, data: UpdateAgendaItemData): Promise<AgendaItem> {
     const updateData: Prisma.AgendaItemUpdateInput = {};
-    
+
     if (data.title !== undefined) updateData.title = data.title;
     if (data.order !== undefined) updateData.order = data.order;
     if (data.type !== undefined) updateData.type = data.type;
@@ -148,15 +165,22 @@ export class AgendaItemModelImpl implements AgendaItemModel {
     return this.prisma.agendaItem.delete(deleteValidator);
   }
 
-  async reorderItems(agendaGroupId: string, itemOrders: Array<{ id: string; order: number }>): Promise<void> {
-    await this.prisma.$transaction(
-      itemOrders.map(({ id, order }) =>
-        this.prisma.agendaItem.update({
-          where: { id, agendaGroupId },
-          data: { order },
-        })
-      )
+  async reorderItems(
+    agendaGroupId: string,
+    itemOrders: Array<{ id: string; order: number }>
+  ): Promise<void> {
+    const ops = itemOrders.map(({ id, order }) =>
+      this.prisma.agendaItem.update({
+        where: { id, agendaGroupId },
+        data: { order },
+      })
     );
+
+    if ('$transaction' in this.prisma) {
+      await this.prisma.$transaction(ops);
+    } else {
+      await Promise.all(ops);
+    }
   }
 
   async getMaxOrder(agendaGroupId: string): Promise<number> {
@@ -168,7 +192,10 @@ export class AgendaItemModelImpl implements AgendaItemModel {
     return result._max.order ?? -1;
   }
 
-  async updateStatus(id: string, status: AgendaItemStatus): Promise<AgendaItem> {
+  async updateStatus(
+    id: string,
+    status: AgendaItemStatus
+  ): Promise<AgendaItem> {
     const updateValidator = Prisma.validator<Prisma.AgendaItemUpdateArgs>()({
       where: { id },
       data: { status },
@@ -193,34 +220,35 @@ export class AgendaItemModelImpl implements AgendaItemModel {
     return this.prisma.agendaItem.update(updateValidator);
   }
 
-  async findByBoardMeetingId(boardMeetingId: string): Promise<AgendaItemWithRelations[]> {
-    const findManyValidator = Prisma.validator<Prisma.AgendaItemFindManyArgs>()({
-      where: {
-        agendaGroup: {
-          boardMeetingId,
+  async findByBoardMeetingId(
+    boardMeetingId: string
+  ): Promise<AgendaItemWithRelations[]> {
+    const findManyValidator = Prisma.validator<Prisma.AgendaItemFindManyArgs>()(
+      {
+        where: {
+          agendaGroup: {
+            boardMeetingId,
+          },
         },
-      },
-      include: {
-        agendaGroup: {
-          select: {
-            id: true,
-            title: true,
-            boardMeetingId: true,
-            boardMeeting: {
-              select: {
-                id: true,
-                title: true,
-                organizationId: true,
+        include: {
+          agendaGroup: {
+            select: {
+              id: true,
+              title: true,
+              boardMeetingId: true,
+              boardMeeting: {
+                select: {
+                  id: true,
+                  title: true,
+                  organizationId: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: [
-        { agendaGroup: { order: 'asc' } },
-        { order: 'asc' },
-      ],
-    });
+        orderBy: [{ agendaGroup: { order: 'asc' } }, { order: 'asc' }],
+      }
+    );
 
     return this.prisma.agendaItem.findMany(findManyValidator);
   }
