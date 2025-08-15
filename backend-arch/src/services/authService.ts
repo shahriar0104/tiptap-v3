@@ -141,7 +141,7 @@ export class AuthService {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env['BACKEND_URL'] || 'http://localhost:4000'}/api/auth/google/callback`,
+        redirectTo: `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/auth/google/callback`,
       },
     });
 

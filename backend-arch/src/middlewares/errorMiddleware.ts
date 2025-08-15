@@ -61,7 +61,7 @@ export const errorHandler = (
   // Handle unexpected errors
   res.status(500).json({
     success: false,
-    error: process.env['NODE_ENV'] === 'production' 
+    error: process.env.NODE_ENV === 'production' 
       ? 'Internal server error' 
       : error.message,
   });

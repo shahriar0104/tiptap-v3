@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response} from 'express';
 import {supabase} from '../config/supabase';
-import {UserModel} from '../models/userModel';
+import {UserModel} from '../models';
 import {AuthenticatedRequest} from '../types';
 import {ForbiddenError, UnauthorizedError} from '../utils/errors';
 import {COOKIE_NAMES, cookieConfig} from '../config/cookies';
@@ -10,7 +10,7 @@ export class AuthMiddleware {
 
   // Define public routes that don't require authentication
   private readonly PUBLIC_ROUTES = [
-    '/health',
+    '/api/health',
     '/api-docs',
     '/api-docs/*', // Swagger UI static assets
     'POST:/api/auth/login',

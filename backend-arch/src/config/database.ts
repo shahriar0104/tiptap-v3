@@ -15,16 +15,16 @@ class DatabaseConnection {
   public static getInstance(): PrismaClient {
     if (!DatabaseConnection.instance) {
       // Check if we're in development and use global variable to prevent multiple instances
-      if (process.env['NODE_ENV'] === 'development' && global.__prisma) {
+      if (process.env.NODE_ENV === 'development' && global.__prisma) {
         DatabaseConnection.instance = global.__prisma;
       } else {
-        const databaseUrl = process.env['DATABASE_URL'];
+        const databaseUrl = process.env.DATABASE_URL;
         if (!databaseUrl) {
           throw new Error('DATABASE_URL environment variable is required');
         }
 
         DatabaseConnection.instance = new PrismaClient({
-          log: process.env['NODE_ENV'] === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+          log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
           datasources: {
             db: {
               url: databaseUrl,
@@ -35,7 +35,7 @@ class DatabaseConnection {
         });
 
         // Store in global variable for development hot reloading
-        if (process.env['NODE_ENV'] === 'development') {
+        if (process.env.NODE_ENV === 'development') {
           global.__prisma = DatabaseConnection.instance;
         }
       }

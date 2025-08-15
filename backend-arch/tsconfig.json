@@ -32,6 +32,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
+  "types": ["node"],
+  "typeRoots": ["./types/env.d.ts", "./node_modules/@types"],
   "include": [
     "src/**/*"
   ],

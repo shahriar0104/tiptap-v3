@@ -172,7 +172,7 @@ export class AuthController {
       }
 
       // Redirect to frontend
-      const frontendUrl = process.env['FRONTEND_URL'] || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       res.redirect(`${frontendUrl}/dashboard`);
     } catch (error) {
       next(error);

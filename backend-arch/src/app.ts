@@ -21,7 +21,7 @@ app.use(cors(corsConfig));
 app.use(generalRateLimit);
 
 // Logging
-app.use(morgan(process.env['NODE_ENV'] === 'production' ? 'combined' : 'dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
