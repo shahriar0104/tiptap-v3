@@ -321,7 +321,7 @@ const swaggerDefinition: SwaggerDefinition = {
 
 const options = {
   definition: swaggerDefinition,
-  apis: ['./src/routes/*.ts', './src/controllers/*.ts'], // Path to the API docs
+  apis: ['./src/routes/**/*.ts', './src/controllers/**/*.ts'], // Scan nested route/controller files too
 };
 
 export const swaggerSpec = swaggerJSDoc(options);

@@ -52,67 +52,7 @@ const { authController, authMiddleware } = container;
  */
 router.post('/login', authRateLimit, authController.login);
 
-/**
- * @swagger
- * /api/auth/set-cookies:
- *   post:
- *     summary: Set authentication cookies
- *     description: Set HTTP-only cookies for authentication tokens after successful Supabase auth
- *     tags: [Authentication]
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - access_token
- *             properties:
- *               access_token:
- *                 type: string
- *                 description: JWT access token from Supabase
- *               refresh_token:
- *                 type: string
- *                 description: JWT refresh token from Supabase
- *     responses:
- *       200:
- *         description: Authentication successful
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request - missing access token
- *       401:
- *         description: Invalid token
- *       429:
- *         description: Too many requests
- */
-router.post('/set-cookies', authRateLimit, authController.setAuthCookies);
-
-/**
- * @swagger
- * /api/auth/refresh:
- *   post:
- *     summary: Refresh authentication token
- *     description: Refresh the access token using the refresh token
- *     tags: [Authentication]
- *     security: []
- *     responses:
- *       501:
- *         description: Not implemented yet
- *       401:
- *         description: Refresh token not found
- *       429:
- *         description: Too many requests
- */
-router.post('/refresh', authRateLimit, authController.refreshToken);
+// Removed legacy endpoints: /set-cookies and /refresh (handled internally by backend)
 
 /**
  * @swagger
@@ -275,25 +215,5 @@ router.get('/google', authController.googleAuth);
  *         description: Server error
  */
 router.get('/google/callback', authController.googleCallback);
-
-/**
- * @swagger
- * /api/auth/logout:
- *   post:
- *     summary: Logout user
- *     description: Clears authentication cookies and logs out user
- *     tags: [Authentication]
- *     security: []
- *     responses:
- *       200:
- *         description: Successfully logged out
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       500:
- *         description: Server error
- */
-router.post('/logout', authController.logout);
 
 export default router;

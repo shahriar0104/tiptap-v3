@@ -186,21 +186,22 @@ src/
 - **MEMBER**: Active participation
 - **OBSERVER**: Read-only meeting access
 
-### Public Routes
+### Protected Routes (default: public)
+The authentication middleware is default-public. Only the following API prefixes are protected and require a valid session:
 ```typescript
 [
-  '/health',
-  '/api-docs',
-  '/api-docs/*',
-  'POST:/api/auth/login',
-  'POST:/api/auth/register',
-  'POST:/api/auth/set-cookies',
-  'POST:/api/auth/refresh',
-  'POST:/api/auth/logout',
-  'GET:/api/auth/google',
-  'GET:/api/auth/google/callback',
-  'POST:/api/auth/register-organization',
-  'POST:/api/board-meetings/organization'
+  // Board meetings
+  '/api/board-meetings',
+  '/api/board-meetings/*',
+  // Agenda groups/items
+  '/api/agenda',
+  '/api/agenda/*',
+  // Editor content
+  '/api/editor-content',
+  '/api/editor-content/*',
+  // Uploads
+  '/api/uploads',
+  '/api/uploads/*',
 ]
 ```
 

@@ -8,35 +8,44 @@ import {COOKIE_NAMES, cookieConfig} from '../config/cookies';
 export class AuthMiddleware {
   constructor(private userModel: UserModel) {}
 
-  // Define public routes that don't require authentication
-  private readonly PUBLIC_ROUTES = [
-    '/api/health',
-    '/api-docs',
-    '/api-docs/*', // Swagger UI static assets
-    'POST:/api/auth/login',
-    'POST:/api/auth/register',
-    'POST:/api/auth/set-cookies',
-    'POST:/api/auth/refresh',
-    'POST:/api/auth/logout',
-    'GET:/api/auth/google',
-    'GET:/api/auth/google/callback',
-    'POST:/api/auth/register-organization',
-    'POST:/api/board-meetings/organization',
+  // Define protected routes that require authentication (default: everything is public)
+  // Adjust this list to fine-tune which endpoints require an authenticated user.
+  private readonly PROTECTED_ROUTES = [
+    // Auth endpoints that require an authenticated user
+    '/api/auth/me',
+    'GET:/api/auth/me',
+    '/api/auth/profile',
+    'PUT:/api/auth/profile',
+    '/api/auth/organization/users',
+    'GET:/api/auth/organization/users',
+    // Board meetings
+    '/api/board-meetings',
+    '/api/board-meetings/*',
+    // Agenda groups/items
+    '/api/agenda',
+    '/api/agenda/*',
+    // Editor content
+    '/api/editor-content',
+    '/api/editor-content/*',
+    // Uploads
+    '/api/uploads',
+    '/api/uploads/*',
   ];
 
   // Helper function to check if a route is public
   private normalizePath = (path: string) =>
     path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
 
-  private isPublicRoute = (method: string, path: string): boolean => {
+  private isProtectedRoute = (method: string, path: string): boolean => {
     const normalizedPath = this.normalizePath(path);
     const routeKey = `${method}:${normalizedPath}`;
+
     if (
-      this.PUBLIC_ROUTES.includes(routeKey) ||
-      this.PUBLIC_ROUTES.includes(normalizedPath)
+      this.PROTECTED_ROUTES.includes(routeKey) ||
+      this.PROTECTED_ROUTES.includes(normalizedPath)
     ) return true;
 
-    return this.PUBLIC_ROUTES.some(route => {
+    return this.PROTECTED_ROUTES.some(route => {
       if (route.includes('*')) {
         const pattern = route.replace(/\*/g, '.*');
         const regex = new RegExp(`^${pattern}$`);
@@ -81,8 +90,8 @@ export class AuthMiddleware {
       const method = req.method;
       const path = req.path;
 
-      // Skip authentication for public routes
-      if (this.isPublicRoute(method, path)) {
+      // Default public: only authenticate for protected routes
+      if (!this.isProtectedRoute(method, path)) {
         return next();
       }
 

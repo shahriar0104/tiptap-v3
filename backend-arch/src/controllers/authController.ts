@@ -76,51 +76,6 @@ export class AuthController {
     }
   };
 
-  // This endpoint would be called by Supabase auth webhook or frontend after successful auth
-  setAuthCookies = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { access_token, refresh_token } = req.body as { 
-        access_token: string; 
-        refresh_token: string; 
-      };
-
-      if (!access_token) {
-        sendError(res, 'Access token is required', 400);
-        return;
-      }
-
-      // Verify the token and get/create user
-      const user = await this.authService.verifyToken(access_token);
-
-      // Set HTTP-only cookies
-      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, access_token, cookieConfig);
-      
-      if (refresh_token) {
-        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refresh_token, cookieConfig);
-      }
-
-      sendSuccess(res, user, 'Authentication successful');
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN] as string | undefined;
-      
-      if (!refreshToken) {
-        sendError(res, 'Refresh token not found', 401);
-        return;
-      }
-
-      // Here you would implement token refresh logic with Supabase
-      // For now, we'll just return an error as this needs Supabase integration
-      sendError(res, 'Token refresh not implemented yet', 501);
-    } catch (error) {
-      next(error);
-    }
-  };
 
   getOrganizationUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

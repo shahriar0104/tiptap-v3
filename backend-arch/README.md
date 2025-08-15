@@ -113,7 +113,6 @@ src/
 ## 📚 API Endpoints
 
 ### Authentication
-- `POST /api/auth/set-cookies` - Set authentication cookies
 - `GET /api/auth/me` - Get current user profile
 - `PUT /api/auth/profile` - Update user profile
 - `POST /api/auth/logout` - Logout user
