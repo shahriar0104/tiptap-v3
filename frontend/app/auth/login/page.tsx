@@ -22,6 +22,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const result = await signIn(email, password);
+    console.log(result);
     
     if (!result.success) {
       errorAlert(result.error || 'Login failed');

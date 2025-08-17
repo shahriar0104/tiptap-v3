@@ -1,14 +1,15 @@
-import { UserRole, OrgRole, BoardMeeting } from '@prisma/client';
+import { UserRole, BoardMeeting } from '@prisma/client';
 import { withTransactionModels, withModels } from '../utils/transaction';
 import { supabaseAdmin } from '../config/supabase';
 import { ConflictError } from '../utils/errors';
 
 export interface CreateOrganizationInput {
   organizationName: string;
+  domain: string;
+  description: string;
   adminEmail: string;
   adminPassword: string;
-  adminFirstName: string;
-  adminLastName: string;
+  adminName: string;
 }
 
 export interface CreateOrganizationResult {
@@ -38,7 +39,7 @@ export class OrganizationServiceImpl implements OrganizationService {
           password: data.adminPassword,
           email_confirm: true,
           user_metadata: {
-            full_name: `${data.adminFirstName} ${data.adminLastName}`,
+            full_name: `${data.adminName}`,
           },
         });
 
@@ -54,6 +55,8 @@ export class OrganizationServiceImpl implements OrganizationService {
         async ({ models }) => {
           const organization = await models.organizationModel.create({
             name: data.organizationName,
+            domain: data.domain,
+            description: data.description,
             slug: data.organizationName
               .toLowerCase()
               .replace(/\s+/g, '-')
@@ -63,15 +66,10 @@ export class OrganizationServiceImpl implements OrganizationService {
           const user = await models.userModel.create({
             id: supabaseUser.id,
             email: data.adminEmail,
-            name: `${data.adminFirstName} ${data.adminLastName}`,
+            name: `${data.adminName}`,
             role: UserRole.ADMIN,
             isActive: true,
-          });
-
-          await models.orgMemberModel.create({
             organizationId: organization.id,
-            userId: user.id,
-            role: OrgRole.OWNER,
           });
 
           return { organization, user };

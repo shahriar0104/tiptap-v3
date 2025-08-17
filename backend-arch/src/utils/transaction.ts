@@ -5,7 +5,6 @@ import {
   OrganizationModelImpl,
 } from '../models/organizationModel';
 import { UserModel, UserModelImpl } from '../models/userModel';
-import { OrgMemberModel, OrgMemberModelImpl } from '../models/orgMemberModel';
 import {
   BoardMeetingModel,
   BoardMeetingModelImpl,
@@ -32,7 +31,6 @@ import { UploadModel, UploadModelImpl } from '../models/uploadModel';
 export interface Models {
   organizationModel: OrganizationModel;
   userModel: UserModel;
-  orgMemberModel: OrgMemberModel;
   boardMeetingModel: BoardMeetingModel;
   agendaGroupModel: AgendaGroupModel;
   agendaItemModel: AgendaItemModel;
@@ -48,7 +46,6 @@ function createModels(client: Prisma.TransactionClient | PrismaClient): Models {
   return {
     organizationModel: new OrganizationModelImpl(client),
     userModel: new UserModelImpl(client),
-    orgMemberModel: new OrgMemberModelImpl(client),
     boardMeetingModel: new BoardMeetingModelImpl(client),
     agendaGroupModel: new AgendaGroupModelImpl(client),
     agendaItemModel: new AgendaItemModelImpl(client),

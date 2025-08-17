@@ -1,4 +1,7 @@
-import { PrismaClient, Prisma, OrgMember, OrgRole } from '@prisma/client';
+// Deprecated OrgMember model. Kept as a no-op stub to maintain backward compatibility
+// after removing membership tables from the simplified schema.
+
+export type OrgRole = 'ADMIN' | 'MEMBER';
 
 export interface CreateOrgMemberData {
   organizationId: string;
@@ -8,6 +11,15 @@ export interface CreateOrgMemberData {
 
 export interface UpdateOrgMemberData {
   role?: OrgRole;
+}
+
+// Minimal shape for compatibility only; no DB calls
+export interface OrgMember {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: OrgRole;
+  joinedAt: Date;
 }
 
 export interface OrgMemberModel {
@@ -30,129 +42,46 @@ export interface OrgMemberModel {
 }
 
 export class OrgMemberModelImpl implements OrgMemberModel {
-  constructor(private prisma: PrismaClient | Prisma.TransactionClient) {}
-
-  async findById(id: string): Promise<OrgMember | null> {
-    const findByIdValidator =
-      Prisma.validator<Prisma.OrgMemberFindUniqueArgs>()({
-        where: { id },
-        include: {
-          user: true,
-          organization: true,
-        },
-      });
-
-    return this.prisma.orgMember.findUnique(findByIdValidator);
+  // All methods now throw to signal deprecation if accidentally used
+  private unsupported(): never {
+    throw new Error('OrgMemberModel is deprecated and not supported in this schema');
   }
 
+  async findById(_id: string): Promise<OrgMember | null> {
+    return this.unsupported();
+  }
   async findByUserAndOrganization(
-    userId: string,
-    organizationId: string
+    _userId: string,
+    _organizationId: string
   ): Promise<OrgMember | null> {
-    const findUniqueValidator =
-      Prisma.validator<Prisma.OrgMemberFindUniqueArgs>()({
-        where: {
-          organizationId_userId: {
-            organizationId,
-            userId,
-          },
-        },
-        include: {
-          user: true,
-          organization: true,
-        },
-      });
-
-    return this.prisma.orgMember.findUnique(findUniqueValidator);
+    return this.unsupported();
   }
-
-  async create(data: CreateOrgMemberData): Promise<OrgMember> {
-    const createValidator = Prisma.validator<Prisma.OrgMemberCreateArgs>()({
-      data: {
-        organizationId: data.organizationId,
-        userId: data.userId,
-        role: data.role,
-      },
-      include: {
-        user: true,
-        organization: true,
-      },
-    });
-
-    return this.prisma.orgMember.create(createValidator);
+  async create(_data: CreateOrgMemberData): Promise<OrgMember> {
+    return this.unsupported();
   }
-
-  async updateRole(id: string, role: OrgRole): Promise<OrgMember> {
-    const updateValidator = Prisma.validator<Prisma.OrgMemberUpdateArgs>()({
-      where: { id },
-      data: {
-        role,
-      },
-      include: {
-        user: true,
-        organization: true,
-      },
-    });
-
-    return this.prisma.orgMember.update(updateValidator);
+  async updateRole(_id: string, _role: OrgRole): Promise<OrgMember> {
+    return this.unsupported();
   }
-
-  async delete(id: string): Promise<OrgMember> {
-    const deleteValidator = Prisma.validator<Prisma.OrgMemberDeleteArgs>()({
-      where: { id },
-    });
-
-    return this.prisma.orgMember.delete(deleteValidator);
+  async delete(_id: string): Promise<OrgMember> {
+    return this.unsupported();
   }
-
-  async findByOrganizationId(organizationId: string): Promise<OrgMember[]> {
-    const findManyValidator = Prisma.validator<Prisma.OrgMemberFindManyArgs>()({
-      where: { organizationId },
-      include: {
-        user: true,
-      },
-      orderBy: { joinedAt: 'desc' },
-    });
-
-    return this.prisma.orgMember.findMany(findManyValidator);
+  async findByOrganizationId(_organizationId: string): Promise<OrgMember[]> {
+    return this.unsupported();
   }
-
-  async findByUserId(userId: string): Promise<OrgMember[]> {
-    const findManyValidator = Prisma.validator<Prisma.OrgMemberFindManyArgs>()({
-      where: { userId },
-      include: {
-        organization: true,
-      },
-      orderBy: { joinedAt: 'desc' },
-    });
-
-    return this.prisma.orgMember.findMany(findManyValidator);
+  async findByUserId(_userId: string): Promise<OrgMember[]> {
+    return this.unsupported();
   }
-
   async findByRole(
-    organizationId: string,
-    role: OrgRole
+    _organizationId: string,
+    _role: OrgRole
   ): Promise<OrgMember[]> {
-    const findManyValidator = Prisma.validator<Prisma.OrgMemberFindManyArgs>()({
-      where: {
-        organizationId,
-        role,
-      },
-      include: {
-        user: true,
-      },
-      orderBy: { joinedAt: 'desc' },
-    });
-
-    return this.prisma.orgMember.findMany(findManyValidator);
+    return this.unsupported();
   }
-
   async checkUserAccess(
-    userId: string,
-    organizationId: string,
-    requiredRoles: OrgRole[]
+    _userId: string,
+    _organizationId: string,
+    _requiredRoles: OrgRole[]
   ): Promise<boolean> {
-    const member = await this.findByUserAndOrganization(userId, organizationId);
-    return member ? requiredRoles.includes(member.role) : false;
+    return this.unsupported();
   }
 }

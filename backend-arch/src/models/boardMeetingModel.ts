@@ -53,17 +53,6 @@ export class BoardMeetingModelImpl implements BoardMeetingModel {
               name: true,
             },
           },
-          members: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  name: true,
-                },
-              },
-            },
-          },
           agendaGroups: {
             orderBy: { order: 'asc' },
             include: {

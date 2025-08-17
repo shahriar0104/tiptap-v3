@@ -14,16 +14,9 @@ datasource db {
 // ENUMS
 // ==========================
 enum UserRole {
-  OWNER
   ADMIN
-  MEMBER
-  VIEWER
-}
-
-enum OrgRole {
-  OWNER
-  ADMIN
-  MEMBER
+  EDITOR
+  BOARD_MEMBER
   VIEWER
 }
 
@@ -31,12 +24,6 @@ enum BoardMeetingStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-}
-
-enum BoardMemberRole {
-  CHAIR
-  MEMBER
-  OBSERVER
 }
 
 enum AgendaItemType {
@@ -72,17 +59,16 @@ model User {
   email     String   @unique
   name      String?
   avatar    String?  // Profile picture URL
-  role      UserRole @default(MEMBER)
+  role      UserRole @default(BOARD_MEMBER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  OrgMember[]
-  boardMembers BoardMember[]
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String        @db.Uuid
+
   uploads      Upload[]
-
   BoardMeeting BoardMeeting[]
-
   Presentation Presentation[]
 }
 
@@ -95,20 +81,8 @@ model Organization {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  members     OrgMember[]
+  users       User[]
   meetings    BoardMeeting[]
-}
-
-model OrgMember {
-  id              String       @id @default(uuid()) @db.Uuid
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId  String      @db.Uuid
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String       @db.Uuid
-  role            OrgRole
-  joinedAt        DateTime     @default(now())
-
-  @@unique([organizationId, userId])
 }
 
 model BoardMeeting {
@@ -124,19 +98,9 @@ model BoardMeeting {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  members         BoardMember[]
   agendaGroups    AgendaGroup[]
   presentations   Presentation[]
   contents        EditorContent[]
-}
-
-model BoardMember {
-  id             String           @id @default(uuid()) @db.Uuid
-  boardMeeting   BoardMeeting     @relation(fields: [boardMeetingId], references: [id], onDelete: Cascade)
-  boardMeetingId String           @db.Uuid
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String           @db.Uuid
-  role           BoardMemberRole
 }
 
 model AgendaGroup {

@@ -10,7 +10,6 @@ interface User {
   avatar?: string;
   role: 'ADMIN' | 'MEMBER' | 'EDITOR' | 'BOARD_MEMBER';
   organizationId?: string;
-  organization?: Organization;
 }
 
 interface Organization {
@@ -23,7 +22,6 @@ interface Organization {
 
 interface AuthContextType {
   user: User | null;
-  organization: Organization | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
@@ -36,7 +34,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Initialize authentication on mount - check for existing session via cookies
@@ -69,17 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.success && response.data) {
         setUser(response.data);
-        setOrganization(response.data.organization || null);
       } else {
         // No valid session
         setUser(null);
-        setOrganization(null);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
       // Clear user state on error
       setUser(null);
-      setOrganization(null);
     } finally {
       setLoading(false);
     }
@@ -87,16 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await api.post<{
-        user: User;
-        organization?: Organization;
-      }>('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password });
+      
+      console.log(response);
 
       if (response.success && response.data) {
         // Cookies are automatically set by the backend
         // Update local state with user data
-        setUser(response.data.user);
-        setOrganization(response.data.organization || null);
+        setUser(response.data as User);
         
         return { success: true };
       } else {
@@ -129,7 +121,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.post<{
         user: User;
-        organization?: Organization;
         requiresVerification?: boolean;
       }>('/auth/register', { email, password, name });
       
@@ -137,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If user is automatically logged in (no email verification), update state
         if (response.data?.user && !response.data?.requiresVerification) {
           setUser(response.data.user);
-          setOrganization(response.data.organization || null);
         }
         return { success: true };
       } else {
@@ -157,13 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Clear local state regardless of API call success
       setUser(null);
-      setOrganization(null);
     }
   };
 
   const value: AuthContextType = {
     user,
-    organization,
     loading,
     signIn,
     signUp,

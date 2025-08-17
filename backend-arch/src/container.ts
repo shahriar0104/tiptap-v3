@@ -5,7 +5,6 @@ import type {
   AgendaItemModel,
   OrganizationModel,
   BoardMeetingModel,
-  OrgMemberModel,
 } from './models';
 import {
   UserModelImpl,
@@ -13,7 +12,6 @@ import {
   AgendaItemModelImpl,
   OrganizationModelImpl,
   BoardMeetingModelImpl,
-  OrgMemberModelImpl,
 } from './models';
 
 import prisma from './config/database';
@@ -60,7 +58,6 @@ export class Container {
   public readonly userModel: UserModel;
   public readonly organizationModel: OrganizationModel;
   public readonly boardMeetingModel: BoardMeetingModel;
-  public readonly orgMemberModel: OrgMemberModel;
   public readonly agendaGroupModel: AgendaGroupModel;
   public readonly agendaItemModel: AgendaItemModel;
   public readonly editorContentModel: EditorContentModel;
@@ -98,7 +95,6 @@ export class Container {
     this.userModel = new UserModelImpl(prisma);
     this.organizationModel = new OrganizationModelImpl(prisma);
     this.boardMeetingModel = new BoardMeetingModelImpl(prisma);
-    this.orgMemberModel = new OrgMemberModelImpl(prisma);
     this.agendaGroupModel = new AgendaGroupModelImpl(prisma);
     this.agendaItemModel = new AgendaItemModelImpl(prisma);
     this.editorContentModel = new EditorContentModelImpl(prisma);

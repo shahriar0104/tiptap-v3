@@ -185,14 +185,14 @@ router.get(
  *       500:
  *         description: Server error
  */
-router.get('/google', authController.googleAuth);
+router.get('/google', authRateLimit, authController.googleAuth);
 
 /**
  * @swagger
  * /api/auth/google/callback:
  *   get:
  *     summary: Handle Google OAuth callback
- *     description: Processes Google OAuth callback and creates/logs in user
+ *     description: Exchanges authorization code for Supabase session and sets auth cookies. Does not create an application user.
  *     tags: [Authentication]
  *     security: []
  *     parameters:
@@ -202,11 +202,7 @@ router.get('/google', authController.googleAuth);
  *         schema:
  *           type: string
  *         description: OAuth authorization code
- *       - in: query
- *         name: state
- *         schema:
- *           type: string
- *         description: OAuth state parameter
+ *
  *     responses:
  *       302:
  *         description: Redirect to frontend with auth cookies set
@@ -215,6 +211,6 @@ router.get('/google', authController.googleAuth);
  *       500:
  *         description: Server error
  */
-router.get('/google/callback', authController.googleCallback);
+router.get('/google/callback', authRateLimit, authController.googleCallback);
 
 export default router;

@@ -21,7 +21,7 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
 
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -39,24 +39,21 @@ export default function RegisterPage() {
         token: string;
         organization: Organization;
         user: User;
-      }>('/auth/register-organization', {
+      }>('/organizations', {
         organizationName: formData.organizationName,
         domain: formData.domain,
         description: formData.description,
-        user: {
-          email: formData.userEmail,
-          name: formData.userName,
-          password: formData.password,
-        },
+        adminName: formData.userName,
+        adminEmail: formData.userEmail,
+        adminPassword: formData.password,
       });
 
-      if (response.success && response.data?.token) {
+      if (response.success) {
         // Store token and redirect to the dashboard
         successAlert(response.message || 'Successfully registered organization & Admin user');
-        localStorage.setItem('auth_token', response.data.token);
         router.push('/');
       } else {
-        errorAlert(response.message || 'Organization registration failed');
+        errorAlert(response?.error || response?.message || 'Organization registration failed');
       }
     } catch (error: any) {
       errorAlert(error.message || 'Registration failed');

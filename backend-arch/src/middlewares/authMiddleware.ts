@@ -223,8 +223,10 @@ export class AuthMiddleware {
         throw new UnauthorizedError('Authentication required');
       }
 
-      // Organization membership will be checked at the service level if needed
-      // The user model no longer has organizationId directly
+      // In simplified schema, user has mandatory organizationId
+      if (!user.organizationId) {
+        throw new ForbiddenError('Organization membership required');
+      }
       next();
     } catch (error) {
       next(error);

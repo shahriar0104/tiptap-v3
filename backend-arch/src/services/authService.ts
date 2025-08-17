@@ -1,4 +1,4 @@
-import { User, OrgRole, Organization } from '@prisma/client';
+import { User, Organization } from '@prisma/client';
 import { supabase } from '../config/supabase';
 import { UserModel } from '../models';
 import { withTransactionModels } from '../utils/transaction';
@@ -52,20 +52,10 @@ export class AuthService {
         throw new UnauthorizedError('Invalid email or password');
       }
 
-      // Get user from our database
-      let user = await this.userModel.findById(data.user.id);
-
+      // Get user from our database; do not auto-create (registration flow required)
+      const user = await this.userModel.findById(data.user.id);
       if (!user) {
-        // Create user if doesn't exist (shouldn't happen for login, but safety check)
-        const nameFromEmail = data.user.email?.split('@')[0] ?? '';
-        const userData: ModelCreateUserData = {
-          id: data.user.id,
-          email: data.user.email ?? '',
-          name: nameFromEmail,
-          role: 'MEMBER',
-        };
-
-        user = await this.userModel.create(userData);
+        throw new UnauthorizedError('User not registered');
       }
 
       return {
@@ -111,31 +101,12 @@ export class AuthService {
     return this.userModel.update(userId, data);
   }
 
-  async createUserFromSupabase(supabaseUser: SupabaseUser): Promise<User> {
-    // Check if user already exists
-    const existingUser = await this.userModel.findById(supabaseUser.id);
-    if (existingUser) {
-      return existingUser;
-    }
-
-    // Check if email is already taken by another user
-    if (supabaseUser.email) {
-      const emailExists = await this.userModel.findByEmail(supabaseUser.email);
-      if (emailExists) {
-        throw new ConflictError('Email already exists');
-      }
-    }
-
-    const userData: ModelCreateUserData = {
-      id: supabaseUser.id,
-      email: supabaseUser.email ?? '',
-      name:
-        supabaseUser.user_metadata?.full_name ??
-        supabaseUser.email?.split('@')[0] ??
-        '',
-    };
-
-    return this.userModel.create(userData);
+  async createUserFromSupabase(_supabaseUser: SupabaseUser): Promise<User> {
+    // Deprecated in simplified schema: user requires organizationId.
+    // User creation must occur during organization registration transaction.
+    throw new ConflictError(
+      'Direct user creation is not allowed. Use organization registration flow.'
+    );
   }
 
   async getUsersByOrganization(organizationId: string): Promise<User[]> {
@@ -157,9 +128,7 @@ export class AuthService {
     return data.url;
   }
 
-  async handleGoogleCallback(
-    code: string
-  ): Promise<{ user: User; session: Session }> {
+  async handleGoogleCallback(code: string): Promise<{ session: Session }> {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error || !data.session || !data.user) {
@@ -168,28 +137,8 @@ export class AuthService {
       );
     }
 
-    // Check if user exists in database
-    let user = await this.userModel.findById(data.user.id);
-
-    if (!user) {
-      // Create new user from Google OAuth data
-      const userData: ModelCreateUserData = {
-        id: data.user.id,
-        email: data.user.email!,
-        name:
-          data.user.user_metadata?.['full_name'] ||
-          data.user.email?.split('@')[0] ||
-          '',
-        role: 'MEMBER' as const,
-      };
-
-      user = await this.userModel.create(userData);
-    }
-
-    return {
-      user,
-      session: data.session,
-    };
+    // Do not create DB user here; registration flow will handle it
+    return { session: data.session };
   }
 
   async logout(accessToken: string): Promise<void> {
@@ -229,7 +178,7 @@ export class AuthService {
       supabaseUserId = authData.user.id;
       const authUserId = authData.user.id;
 
-      // 2-3. Create organization, admin user, and org membership atomically
+      // 2-3. Create organization and admin user atomically
       const result = await withTransactionModels(async ({ models }) => {
         const createdOrg = await models.organizationModel.create({
           name: data.organizationName,
@@ -244,12 +193,7 @@ export class AuthService {
           email: data.adminEmail,
           name: `${data.adminFirstName} ${data.adminLastName}`,
           role: 'ADMIN',
-        });
-
-        await models.orgMemberModel.create({
           organizationId: createdOrg.id,
-          userId: createdUser.id,
-          role: OrgRole.OWNER,
         });
 
         return { organization: createdOrg, user: createdUser };
