@@ -6,6 +6,7 @@ import {
   CreateAgendaGroupInput,
   UpdateAgendaGroupInput,
   GetAgendaGroupParams,
+  CreateAgendaGroupWithItemsInput,
 } from '../validators/agenda';
 
 export class AgendaGroupController {
@@ -25,6 +26,31 @@ export class AgendaGroupController {
         user.organizationId || undefined
       );
       sendSuccess(res, agendaGroup, 'Agenda group created successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  createAgendaGroupWithItems = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const user = (req as AuthenticatedRequest).user;
+      const data = req.body as CreateAgendaGroupWithItemsInput;
+
+      const agendaGroup =
+        await this.agendaGroupService.createAgendaGroupWithItems(
+          data,
+          user.organizationId || undefined
+        );
+      sendSuccess(
+        res,
+        agendaGroup,
+        'Agenda group with items created successfully',
+        201
+      );
     } catch (error) {
       next(error);
     }

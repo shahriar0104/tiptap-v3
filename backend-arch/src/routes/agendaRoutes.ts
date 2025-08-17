@@ -3,6 +3,7 @@ import { container } from '../container';
 import { validateRequest } from '../middlewares';
 import {
   createAgendaGroupSchema,
+  createAgendaGroupWithItemsSchema,
   updateAgendaGroupSchema,
   getAgendaGroupSchema,
   createAgendaItemSchema,
@@ -49,6 +50,28 @@ router.post(
   '/groups',
   validateRequest(createAgendaGroupSchema),
   agendaGroupController.createAgendaGroup
+);
+
+/**
+ * @swagger
+ * /api/agenda/groups/with-items:
+ *   post:
+ *     summary: Create agenda group with items (bulk)
+ *     tags: [Agenda]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Created
+ */
+router.post(
+  '/groups/with-items',
+  validateRequest(createAgendaGroupWithItemsSchema),
+  agendaGroupController.createAgendaGroupWithItems
 );
 
 /**

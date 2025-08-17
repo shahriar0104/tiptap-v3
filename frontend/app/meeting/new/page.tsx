@@ -4,12 +4,14 @@ import {useState} from "react";
 import {useRouter} from "next/navigation";
 import DatePicker from "@/components/ui-helper/DatePicker";
 import {api} from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function NewMeetingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,27 +20,44 @@ export default function NewMeetingPage() {
 
     const formData = new FormData(e.currentTarget);
     
+    if (!user?.organizationId) {
+      setIsLoading(false);
+      setError('No organization found. Please complete organization setup.');
+      return;
+    }
+
     // Structure data according to backend validation requirements
-    const requestData = {
-      boardMeetingData: {
-        title: formData.get('title') as string,
-        description: formData.get('description') as string || null,
-        meetingDate: selectedDate ? selectedDate.toISOString() : null,
-        status: 'DRAFT'
-      },
-      agendaItems: [] // Start with empty agenda items, can be added later
+    const title = (formData.get('title') as string) || '';
+    const descriptionRaw = (formData.get('description') as string) || '';
+    type CreateMeetingPayload = {
+      title: string;
+      organizationId: string;
+      description?: string;
+      meetingDate?: string;
     };
+    const payload: CreateMeetingPayload = {
+      title,
+      organizationId: user.organizationId,
+    };
+    if (descriptionRaw.trim().length > 0) payload.description = descriptionRaw;
+    if (selectedDate) payload.meetingDate = selectedDate.toISOString();
 
     try {
-      const result = await api.post<{id: string}>('/board-meetings', requestData);
+      type CreatedMeeting = { id: string; title: string };
+      const result = await api.post<CreatedMeeting>(
+        '/board-meetings',
+        payload
+      );
       
       if (!result.success) {
         throw new Error(result.error || result.message || 'Failed to create meeting');
       }
 
       // Navigate to the created meeting
-      if (result.data?.id) {
-        router.push(`/meeting/${result.data.id}`);
+      // API returns the created meeting object
+      const created = result.data as { id?: string } | undefined;
+      if (created && created.id) {
+        router.push(`/meeting/${created.id}`);
       } else {
         router.push('/dashboard'); // Fallback to dashboard if no ID
       }
@@ -117,7 +136,7 @@ export default function NewMeetingPage() {
               "
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Optional: Provide context about the meeting's purpose and agenda
+              Optional: Provide context about the meeting&apos;s purpose and agenda
             </p>
           </div>
 

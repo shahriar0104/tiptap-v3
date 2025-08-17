@@ -6,7 +6,6 @@ import {useAuth} from '@/contexts/AuthContext';
 import {api} from '@/lib/api';
 import {FcGoogle} from 'react-icons/fc';
 import {MdBusiness, MdDescription, MdDomain, MdEmail, MdLock, MdPerson} from 'react-icons/md';
-import {Organization, User} from "@/shared/types";
 import {useToast} from "@/contexts/ToastProvider";
 
 export default function RegisterPage() {
@@ -35,15 +34,17 @@ export default function RegisterPage() {
 
     try {
       // Register organization with admin user directly through backend
-      const response = await api.post<{
-        token: string;
-        organization: Organization;
-        user: User;
-      }>('/organizations', {
+      const [adminFirstName, adminLastName] = (() => {
+        const parts = formData.userName.trim().split(/\s+/);
+        const first = parts[0] || '';
+        const last = parts.slice(1).join(' ') || 'Admin';
+        return [first, last];
+      })();
+
+      const response = await api.post('/organizations', {
         organizationName: formData.organizationName,
-        domain: formData.domain,
-        description: formData.description,
-        adminName: formData.userName,
+        adminFirstName,
+        adminLastName,
         adminEmail: formData.userEmail,
         adminPassword: formData.password,
       });

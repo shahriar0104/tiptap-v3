@@ -56,6 +56,7 @@ export interface CreateAgendaGroupData {
   title: string;
   order: number;
   startTime: Date;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | undefined;
   boardMeetingId: string;
 }
 
@@ -63,6 +64,7 @@ export interface UpdateAgendaGroupData {
   title?: string | undefined;
   order?: number | undefined;
   startTime?: Date | undefined;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | undefined;
 }
 
 export interface CreateAgendaItemData {

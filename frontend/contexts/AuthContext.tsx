@@ -1,14 +1,14 @@
 'use client';
 
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {api} from '@/lib/api';
+import {api, API_BASE_URL} from '@/lib/api';
 
 interface User {
   id: string;
   email: string;
   name?: string;
   avatar?: string;
-  role: 'ADMIN' | 'MEMBER' | 'EDITOR' | 'BOARD_MEMBER';
+  role: 'ADMIN' | 'EDITOR' | 'BOARD_MEMBER' | 'VIEWER';
   organizationId?: string;
 }
 
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     try {
       // Call backend to get user profile - cookies are automatically included
-      const response = await api.get<User>('/auth/profile');
+      const response = await api.get<User>('/auth/me');
 
       if (response.success && response.data) {
         setUser(response.data);
@@ -101,17 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const response = await api.get<{
-        redirectUrl: string;
-      }>('/auth/google');
-      
-      if (response.success && response.data) {
-        // Redirect to Google OAuth URL provided by backend
-        window.location.href = response.data.redirectUrl;
-        return { success: true };
-      } else {
-        return { success: false, error: response.message || 'Google login failed' };
-      }
+      // Backend handles redirect directly; no JSON expected
+      window.location.href = `${API_BASE_URL}/api/auth/google`;
+      return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || 'Google login failed' };
     }

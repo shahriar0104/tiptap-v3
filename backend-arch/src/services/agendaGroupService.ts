@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { withModels, withTransactionModels } from '../utils/transaction';
 import { CreateAgendaGroupData, UpdateAgendaGroupData } from '../types';
+import type { CreateAgendaGroupWithItemsInput } from '../validators/agenda';
 import {
   NotFoundError,
   ForbiddenError,
@@ -27,6 +28,10 @@ type AgendaGroupWithRelations = Prisma.AgendaGroupGetPayload<{
 export interface AgendaGroupService {
   createAgendaGroup(
     data: CreateAgendaGroupData,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations>;
+  createAgendaGroupWithItems(
+    data: CreateAgendaGroupWithItemsInput,
     userOrganizationId?: string
   ): Promise<AgendaGroupWithRelations>;
   getAgendaGroupById(
@@ -83,6 +88,75 @@ export class AgendaGroupServiceImpl implements AgendaGroupService {
       }
 
       return models.agendaGroupModel.create(data);
+    });
+  }
+
+  async createAgendaGroupWithItems(
+    data: CreateAgendaGroupWithItemsInput,
+    userOrganizationId?: string
+  ): Promise<AgendaGroupWithRelations> {
+    return withTransactionModels(async ({ models }) => {
+      // Verify the board meeting exists and user has access
+      const boardMeeting = await models.boardMeetingModel.findById(
+        data.boardMeetingId
+      );
+
+      if (!boardMeeting) {
+        throw new NotFoundError('Board meeting not found');
+      }
+
+      if (
+        userOrganizationId &&
+        boardMeeting.organizationId !== userOrganizationId
+      ) {
+        throw new ForbiddenError('Access denied to this board meeting');
+      }
+
+      // Determine order if not provided or invalid
+      let order = data.order;
+      if (order === undefined || order < 0) {
+        const maxOrder = await models.agendaGroupModel.getMaxOrder(
+          data.boardMeetingId
+        );
+        order = maxOrder + 1;
+      }
+
+      // Create group first
+      const createdGroup = await models.agendaGroupModel.create({
+        title: data.title,
+        order,
+        startTime: data.startTime as unknown as Date,
+        // status currently not persisted at model level; kept for future extension
+        boardMeetingId: data.boardMeetingId,
+      });
+
+      // Helper: map incoming type to existing enum in DB
+      const mapType = (t: string | undefined): 'STANDARD' | 'DECISION' | 'INFO' => {
+        if (!t) return 'STANDARD';
+        const u = t.toUpperCase();
+        if (u === 'APPROVE' || u === 'DECISION') return 'DECISION';
+        if (u === 'NOTING' || u === 'INFO') return 'INFO';
+        return 'STANDARD';
+      };
+
+      // Create items
+      const sortedItems = (data.items || []).slice().sort((a, b) => a.order - b.order);
+      for (const item of sortedItems) {
+        await models.agendaItemModel.create({
+          title: item.title,
+          order: item.order,
+          startTime: item.startTime as unknown as Date,
+          type: mapType(item.type as any),
+          agendaGroupId: createdGroup.id,
+        });
+      }
+
+      // Return group with relations (including newly created items)
+      const full = await models.agendaGroupModel.findById(createdGroup.id);
+      if (!full) {
+        throw new NotFoundError('Failed to load created agenda group');
+      }
+      return full;
     });
   }
 

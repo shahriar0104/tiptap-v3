@@ -1,9 +1,9 @@
 "use client";
 
-import {useCallback, useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {api} from "@/lib/api";
-import {MdAccessTime, MdArrowBack, MdCalendarToday, MdDescription, MdRefresh} from "react-icons/md";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { MdAccessTime, MdArrowBack, MdCalendarToday, MdDescription, MdRefresh } from "react-icons/md";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BoardMeeting {
@@ -19,7 +19,7 @@ interface BoardMeeting {
   };
 }
 
-export default function PastMeetingsPage() {
+export default function UpcomingMeetingsPage() {
   const [meetings, setMeetings] = useState<BoardMeeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,26 +36,43 @@ export default function PastMeetingsPage() {
         return;
       }
 
-      // Request only archived meetings for the user's organization with basic pagination
+      // Backend accepts a single status per request; fetch both and merge
       type Paginated<T> = { data: T[]; pagination: { page: number; limit: number; total: number; totalPages: number } };
-      const query = new URLSearchParams({
-        status: 'ARCHIVED',
+
+      const baseParams = {
         organizationId: user.organizationId,
         page: '1',
         limit: '20',
-      }).toString();
+      };
 
-      const response = await api.get<Paginated<BoardMeeting>>(`/board-meetings?${query}`);
-      
-      if (response && response?.success) {
-        const list = (response.data?.data as BoardMeeting[]) || [];
-        setMeetings(list);
-      } else {
-        setMeetings([]);
-      }
+      const draftQuery = new URLSearchParams({ ...baseParams, status: 'DRAFT' }).toString();
+      const publishedQuery = new URLSearchParams({ ...baseParams, status: 'PUBLISHED' }).toString();
+
+      const [draftRes, publishedRes] = await Promise.all([
+        api.get<Paginated<BoardMeeting>>(`/board-meetings?${draftQuery}`),
+        api.get<Paginated<BoardMeeting>>(`/board-meetings?${publishedQuery}`),
+      ]);
+
+      const draftList = draftRes?.success ? ((draftRes.data?.data as BoardMeeting[]) || []) : [];
+      const publishedList = publishedRes?.success ? ((publishedRes.data?.data as BoardMeeting[]) || []) : [];
+
+      // Merge unique by id
+      const mergedMap = new Map<string, BoardMeeting>();
+      [...draftList, ...publishedList].forEach((m) => mergedMap.set(m.id, m));
+      const merged = Array.from(mergedMap.values());
+
+      // Sort upcoming meetings by meetingDate (asc), fallback to createdAt
+      merged.sort((a, b) => {
+        const aDate = new Date(a.meetingDate || a.createdAt).getTime();
+        const bDate = new Date(b.meetingDate || b.createdAt).getTime();
+        return aDate - bDate;
+      });
+
+      setMeetings(merged);
     } catch (err) {
       setError('Failed to fetch meetings');
       console.error('Error fetching meetings:', err);
+      setMeetings([]);
     } finally {
       setIsLoading(false);
     }
@@ -69,16 +86,12 @@ export default function PastMeetingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       case 'PUBLISHED':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case 'DRAFT':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'ARCHIVED':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
     }
@@ -94,8 +107,8 @@ export default function PastMeetingsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -105,10 +118,10 @@ export default function PastMeetingsPage() {
           </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Past Meetings
+              Upcoming Meetings
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Browse previous board meetings and their records
+              Browse draft and published board meetings
             </p>
           </div>
         </div>
@@ -210,6 +223,6 @@ export default function PastMeetingsPage() {
           )}
         </div>
       )}
-      </div>
+    </div>
   );
 }

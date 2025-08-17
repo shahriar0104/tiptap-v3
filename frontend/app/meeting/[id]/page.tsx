@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
+import {useRouter, useParams} from "next/navigation";
 import AgendaBuilder from "@/components/agenda/AgendaBuilder";
 import {api} from "@/lib/api";
 
@@ -11,27 +11,37 @@ interface BoardMeeting {
   description?: string;
   status: string;
   meetingDate?: string;
-  agendaItems?: Array<{
+  agendaGroups?: Array<{
     id: string;
     title: string;
-    description?: string;
     order: number;
-    duration?: number;
-    status: string;
+    startTime?: string; // ISO or HH:MM depending on backend
+    status?: string;
+    agendaItems: Array<{
+      id: string;
+      title: string;
+      order: number;
+      startTime?: string;
+      type?: string;
+      status?: string;
+    }>;
   }>;
 }
 
-export default function AgendaPage({ params }: { params: { id: string } }) {
+export default function AgendaPage() {
   const [boardMeeting, setBoardMeeting] = useState<BoardMeeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params?.id[0] : undefined;
 
   useEffect(() => {
     const fetchBoardMeeting = async () => {
       try {
         setLoading(true);
-        const result = await api.get<BoardMeeting>(`/board-meetings/${params.id}`);
+        if (!id) return;
+        const result = await api.get<BoardMeeting>(`/board-meetings/${id}`);
         
         if (result.success && result.data) {
           setBoardMeeting(result.data);
@@ -47,7 +57,7 @@ export default function AgendaPage({ params }: { params: { id: string } }) {
     };
 
     fetchBoardMeeting();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -90,18 +100,49 @@ export default function AgendaPage({ params }: { params: { id: string } }) {
     );
   }
 
-  // Transform board meeting agenda items to AgendaBuilder format
-  const initialGroups = boardMeeting.agendaItems ? [
-    {
-      id: "main-agenda",
-      items: boardMeeting.agendaItems.map(item => ({
-        id: item.id,
-        time: "", // Can be enhanced later with time data
-        title: item.title,
-        action: "Action" as const // Default action can be enhanced
-      }))
+  // Transform backend agendaGroups to AgendaBuilder format
+  const toTime = (isoOrTime?: string) => {
+    if (!isoOrTime) return "";
+    try {
+      // If it's a full ISO string, format to HH:MM
+      const d = new Date(isoOrTime);
+      if (!isNaN(d.getTime())) {
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+      }
+      // Otherwise assume already HH:MM or acceptable string
+      return isoOrTime;
+    } catch {
+      return "";
     }
-  ] : [];
+  };
+  const toAction = (type?: string) => {
+    if (!type) return "Action" as const;
+    const t = type.toUpperCase();
+    // New enums
+    if (t === 'DECISION') return "Approve" as const;
+    if (t === 'INFO') return "Noting" as const;
+    if (t === 'STANDARD') return "Action" as const;
+    // Legacy support
+    if (t === 'APPROVE') return "Approve" as const;
+    if (t === 'NOTING') return "Noting" as const;
+    if (t === 'ACTION') return "Action" as const;
+    return "Action" as const;
+  };
+
+  const initialGroups = (boardMeeting.agendaGroups || []).map(group => ({
+    id: group.id,
+    title: group.title,
+    time: toTime(group.startTime),
+    status: (group.status || 'PENDING') as any,
+    items: (group.agendaItems || []).map(item => ({
+      id: item.id,
+      time: toTime(item.startTime),
+      title: item.title,
+      action: toAction(item.type),
+    })),
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -135,7 +176,7 @@ export default function AgendaPage({ params }: { params: { id: string } }) {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>{boardMeeting.agendaItems?.length || 0} agenda items</span>
+                <span>{(boardMeeting.agendaGroups || []).reduce((acc, g) => acc + (g.agendaItems?.length || 0), 0)} agenda items</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -162,7 +203,7 @@ export default function AgendaPage({ params }: { params: { id: string } }) {
               Organize and manage your meeting agenda items with drag-and-drop functionality.
             </p>
           </div>
-          <AgendaBuilder paperId={boardMeeting.id} initialGroups={initialGroups} />
+          <AgendaBuilder paperId={boardMeeting.id} initialGroups={initialGroups} meetingDate={boardMeeting.meetingDate} />
         </div>
       </div>
     </div>

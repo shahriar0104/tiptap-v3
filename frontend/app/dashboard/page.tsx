@@ -4,10 +4,10 @@ import React from 'react';
 import {motion} from 'framer-motion';
 import CardButton from "@/components/ui-helper/CardButton";
 import {useAuth} from '@/contexts/AuthContext';
-import {MdAdd, MdFolder, MdHistory, MdLink, MdPictureAsPdf} from "react-icons/md";
+import {MdAdd, MdFolder, MdHistory, MdLink, MdPictureAsPdf, MdSchedule} from "react-icons/md";
 
 export default function Dashboard() {
-  const { user, organization } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="space-y-8">
@@ -19,7 +19,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {organization?.name || 'Board Meeting'} Dashboard
+            Board Smith Dashboard
           </motion.h1>
           <motion.p 
             className="text-xl text-gray-600 dark:text-gray-300"
@@ -49,6 +49,12 @@ export default function Dashboard() {
               description="Set up a new board meeting with agenda"
               icon={<MdAdd className="w-6 h-6" />}
               tone="brand"
+            />
+            <CardButton
+              href="/meeting/upcoming"
+              title="View Upcoming Meetings"
+              description="Browse draft and published meetings"
+              icon={<MdSchedule className="w-6 h-6" />}
             />
             <CardButton
               href="/meeting/past"
