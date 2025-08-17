@@ -5,7 +5,10 @@ import {motion} from 'framer-motion';
 import {useAuth} from '@/contexts/AuthContext';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {MdAnalytics, MdArrowForward, MdCheck, MdGroups, MdRocketLaunch, MdSecurity} from "react-icons/md";
+import {MdArrowForward, MdCheck} from "react-icons/md";
+import Hero from "@/components/landing/Hero";
+import FeatureGrid from "@/components/landing/FeatureGrid";
+import Testimonials from "@/components/landing/Testimonials";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -61,108 +64,13 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20 text-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6"
-        >
-          AI-Enhanced Board
-          <span className="text-blue-600"> Management</span>
-        </motion.h1>
-        
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto"
-        >
-          Streamline your board meetings with intelligent agenda management, 
-          automated minutes, and powerful collaboration tools designed for modern organizations.
-        </motion.p>
+      <Hero />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="space-x-4 font-subheading"
-        >
-          <Link 
-            href="/auth/register"
-            className="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Start Free Trial
-            <MdArrowForward className="ml-2 w-5 h-5" />
-          </Link>
-          <Link 
-            href="/auth/login"
-            className="inline-flex items-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-lg font-semibold rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-          >
-            Sign In
-          </Link>
-        </motion.div>
-      </section>
+      {/* Testimonials */}
+      <Testimonials />
 
-      {/* Features Section */}
-      <section className="container mx-auto px-6 py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Everything You Need for Effective Board Governance
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Built for modern organizations that value efficiency, transparency, and strategic decision-making.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[
-            {
-              icon: <MdRocketLaunch className="w-8 h-8" />,
-              title: "Fast Setup",
-              description: "Get your board meetings organized in minutes, not hours"
-            },
-            {
-              icon: <MdSecurity className="w-8 h-8" />,
-              title: "Enterprise Security",
-              description: "Bank-level security with role-based access control"
-            },
-            {
-              icon: <MdGroups className="w-8 h-8" />,
-              title: "Team Collaboration",
-              description: "Seamless collaboration tools for board members and executives"
-            },
-            {
-              icon: <MdAnalytics className="w-8 h-8" />,
-              title: "Smart Analytics",
-              description: "AI-powered insights and automated meeting summaries"
-            }
-          ].map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 + index * 0.1 }}
-              className="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
-            >
-              <div className="text-blue-600 dark:text-blue-400 mb-4 flex justify-center">
-                {feature.icon}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                {feature.description}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      {/* Feature Grid */}
+      <FeatureGrid />
 
       {/* Benefits Section */}
       <section className="container mx-auto px-6 py-20 bg-white dark:bg-gray-800 rounded-2xl mx-6 mb-20">
