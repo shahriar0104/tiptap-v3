@@ -1,5 +1,5 @@
 import type {Metadata} from "next";
-import {Geist, Geist_Mono} from "next/font/google";
+import { Bricolage_Grotesque, Space_Grotesk, Merriweather } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import {cookies} from 'next/headers';
@@ -8,15 +8,25 @@ import {AuthProvider} from "@/contexts/AuthContext";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import {ToastProvider} from "@/contexts/ToastProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  weight: ["400", "600", "700"],
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
 });
+
+const merriweather = Merriweather({
+  variable: "--font-merriweather",
+  weight: ["300", "400", "700"],
+  subsets: ["latin"],
+});
+
+// EB Garamond removed per design update
 
 export const metadata: Metadata = {
   title: "Boardsmith",
@@ -32,21 +42,21 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const serverTheme = (cookieStore.get('theme')?.value as 'light' | 'dark') ?? 'light';
 
+  const fontVars = `${bricolage.variable} ${spaceGrotesk.variable} ${merriweather.variable}`;
+  const bodyFont = merriweather.className; // enforce Merriweather as base font
   return (
-    <html lang="en" className={serverTheme === 'dark' ? 'dark' : ''}>
-      <ThemeProvider serverTheme={serverTheme}>
-        <AuthProvider>
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          >
+    <html lang="en" className={`${bodyFont} ${fontVars} ${serverTheme === 'dark' ? 'dark' : ''}`}>
+      <body className={`${bodyFont} ${fontVars} antialiased`}>
+        <ThemeProvider serverTheme={serverTheme}>
+          <AuthProvider>
             <ToastProvider>
               <ConditionalLayout>
                 {children}
               </ConditionalLayout>
             </ToastProvider>
-          </body>
-        </AuthProvider>
-      </ThemeProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -18,6 +18,15 @@ export default function ProtectedRoute({
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Redirect to log in if not authenticated (keep hook order stable)
+  const shouldRedirect = !loading && !user;
+  React.useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/auth/login');
+    }
+  }, [shouldRedirect, router]);
+  if (shouldRedirect) return null;
+
   // Show loading state
   if (loading) {
     return (
@@ -29,11 +38,8 @@ export default function ProtectedRoute({
     );
   }
 
-  // Redirect to log in if not authenticated
-  if (!user) {
-    router.push('/auth/login');
-    return null;
-  }
+  // Type guard: at this point either user exists or we already returned above
+  if (!user) return null;
 
   // Check role requirements
   if (requireRole) {

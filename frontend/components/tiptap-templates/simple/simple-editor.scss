@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+/* Editor-specific font: DM Sans (scoped to simple-editor only) */
 
 body {
   --tt-toolbar-height: 44px;
@@ -9,14 +10,7 @@ body {
   }
 }
 
-body {
-  font-family: "Inter", sans-serif;
-  color: var(--tt-theme-text);
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  padding: 0;
-}
+/* Do not override global body font here; inherit from project */
 
 html,
 body,
@@ -44,13 +38,28 @@ body,
   background: transparent;
 }
 
-.tiptap.ProseMirror {
-  font-family: "DM Sans", sans-serif;
-}
-
 .simple-editor-wrapper {
   display: flex;
   flex-direction: column;
+  /* Scope DM Sans to editor only */
+  font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Ensure editor region ignores global heading/button font overrides */
+.simple-editor-wrapper .tiptap.ProseMirror,
+.simple-editor-wrapper .tiptap.ProseMirror h1,
+.simple-editor-wrapper .tiptap.ProseMirror h2,
+.simple-editor-wrapper .tiptap.ProseMirror h3,
+.simple-editor-wrapper .tiptap.ProseMirror h4,
+.simple-editor-wrapper .tiptap.ProseMirror p,
+.simple-editor-wrapper .tiptap.ProseMirror li,
+.simple-editor-wrapper .tiptap.ProseMirror blockquote {
+  font-family: inherit;
+}
+
+.simple-editor-wrapper button,
+.simple-editor-wrapper [role="button"] {
+  font-family: inherit;
 }
 
 .simple-editor-content {

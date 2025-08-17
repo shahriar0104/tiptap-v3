@@ -25,6 +25,15 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   // Check if the current route is public
   const isPublicRoute = publicRoutes.includes(pathname);
 
+  // Centralized authentication guard for protected routes
+  const shouldRedirect = !loading && !isPublicRoute && !user;
+  React.useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/auth/login');
+    }
+  }, [shouldRedirect, router]);
+  if (shouldRedirect) return null;
+
   // Show loading state while authentication is being checked
   if (loading) {
     return (
@@ -32,13 +41,6 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
-  }
-
-  // Centralized authentication guard for protected routes
-  // Redirect and return null immediately to prevent flash of content
-  if (!isPublicRoute && !user) {
-    router.push('/auth/login');
-    return null;
   }
 
   // Show sidebar only for authenticated users with organization on non-public routes

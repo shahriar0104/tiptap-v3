@@ -15,7 +15,7 @@ export default function Breadcrumbs() {
   if (pathname === "/dashboard" || pathname === "/") return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4">
+    <nav aria-label="Breadcrumb" className="font-breadcrumb mb-4">
       <ol className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
         <li>
           <Link

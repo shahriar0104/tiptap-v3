@@ -4,8 +4,15 @@
 
 /* 1. Your own design tokens */
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Map tokens to our font variables from next/font */
+  --font-heading: var(--font-bricolage);
+  --font-subheading: var(--font-space-grotesk);
+  --font-body: var(--font-merriweather);
+  --font-ui: var(--font-space-grotesk);
+  /* Ensure Tailwind's tokenized utilities and preflight map to our defaults */
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-body);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* 2. Light tokens by default */
@@ -23,18 +30,46 @@
 }
 
 /* 4. Use the tokens */
+html,
 body {
   background: var(--background);
   color: var(--foreground);
+  /* Default body font: Merriweather */
+  font-family: var(--font-body), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 /* 5. Global interactions */
+/* Buttons use Space Grotesk */
 button,
 [role="button"] {
   cursor: pointer;
+  font-family: var(--font-ui), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 button:disabled,
 [aria-disabled="true"] {
   cursor: not-allowed;
+}
+
+/* Headings: Bricolage for big headers (h1,h2), Space Grotesk for subheaders (h3,h4) */
+h1,
+h2 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}
+
+h3,
+h4 {
+  font-family: var(--font-subheading), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}
+
+/* Breadcrumbs: Space Grotesk */
+.font-breadcrumb,
+nav[aria-label="Breadcrumb"] {
+  font-family: var(--font-ui), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}
+
+/* Tooltip: Bricolage Grotesque */
+[role="tooltip"],
+.tooltip {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
 }
