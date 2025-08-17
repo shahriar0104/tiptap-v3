@@ -4,12 +4,17 @@ import React, { useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/contexts/ToastProvider";
+import { useBreadcrumbs } from "@/components/layout/breadcrumbsStore";
 
 export default function AgendaItemUploadPage() {
   const router = useRouter();
   const params = useParams<{ itemId: string }>();
   const search = useSearchParams();
   const { successAlert, errorAlert } = useToast();
+  useBreadcrumbs([
+    { label: 'Upcoming Meetings', href: '/meeting/upcoming' },
+    { label: 'Upload Document' },
+  ]);
 
   const agendaItemId = typeof params?.itemId === "string" ? params.itemId : Array.isArray(params?.itemId) ? params.itemId[0] : "";
   const meetingId = search?.get("meetingId") || "";
@@ -65,8 +70,7 @@ export default function AgendaItemUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="space-y-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Upload Document</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -99,18 +103,7 @@ export default function AgendaItemUploadPage() {
               </select>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              {meetingId ? (
-                <button
-                  type="button"
-                  onClick={() => router.push(`/meeting/${meetingId}`)}
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Back to Meeting
-                </button>
-              ) : (
-                <div />
-              )}
+            <div className="flex items-center">
               <button
                 type="submit"
                 disabled={submitting}
@@ -121,7 +114,6 @@ export default function AgendaItemUploadPage() {
             </div>
           </form>
         </div>
-      </div>
     </div>
   );
 }

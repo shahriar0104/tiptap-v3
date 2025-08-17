@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {useRouter, useParams} from "next/navigation";
 import AgendaBuilder from "@/components/agenda/AgendaBuilder";
 import {api} from "@/lib/api";
+import { useBreadcrumbs } from "@/components/layout/breadcrumbsStore";
 
 interface BoardMeeting {
   id: string;
@@ -36,6 +37,12 @@ export default function AgendaPage() {
   const params = useParams<{ id: string }>();
   const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params?.id[0] : undefined;
 
+  // Manual breadcrumbs: Dashboard > Upcoming Meetings > {Meeting Title}
+  useBreadcrumbs([
+    { label: 'Upcoming Meetings', href: '/meeting/upcoming' },
+    { label: boardMeeting?.title || 'Meeting' },
+  ]);
+
   useEffect(() => {
     const fetchBoardMeeting = async () => {
       try {
@@ -61,7 +68,7 @@ export default function AgendaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -69,7 +76,7 @@ export default function AgendaPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Error</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
@@ -77,7 +84,7 @@ export default function AgendaPage() {
             onClick={() => router.push('/dashboard')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Back to Dashboard
+            Go to Dashboard
           </button>
         </div>
       </div>
@@ -86,14 +93,14 @@ export default function AgendaPage() {
 
   if (!boardMeeting) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Board Meeting Not Found</h1>
           <button
             onClick={() => router.push('/dashboard')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Back to Dashboard
+            Go to Dashboard
           </button>
         </div>
       </div>
@@ -145,10 +152,9 @@ export default function AgendaPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="space-y-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <div>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
               {boardMeeting.title}
@@ -210,7 +216,6 @@ export default function AgendaPage() {
             meetingStatus={boardMeeting.status}
           />
         </div>
-      </div>
     </div>
   );
 }

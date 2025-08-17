@@ -5,8 +5,10 @@ import {useRouter} from "next/navigation";
 import DatePicker from "@/components/ui-helper/DatePicker";
 import {api} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBreadcrumbs } from "@/components/layout/breadcrumbsStore";
 
 export default function NewMeetingPage() {
+  useBreadcrumbs([{ label: 'Create Meeting' }]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -69,7 +71,7 @@ export default function NewMeetingPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -181,7 +183,7 @@ export default function NewMeetingPage() {
 
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push('/dashboard')}
               className="
                 px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-700
                 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
@@ -196,6 +198,6 @@ export default function NewMeetingPage() {
           </div>
         </form>
       </div>
-      </div>
+    </div>
   );
 }

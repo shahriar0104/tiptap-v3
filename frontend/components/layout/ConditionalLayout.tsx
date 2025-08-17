@@ -4,6 +4,7 @@ import React from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import {usePathname, useRouter} from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
+import PageContainer from '@/components/layout/PageContainer';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -52,7 +53,9 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
           <Sidebar />
         </aside>
         <main className="col-span-12 lg:col-span-9 xl:col-span-10 p-4 sm:p-6 lg:p-8">
-          {children}
+          <PageContainer>
+            {children}
+          </PageContainer>
         </main>
       </div>
     );

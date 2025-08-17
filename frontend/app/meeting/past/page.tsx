@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
 import {api} from "@/lib/api";
-import {MdAccessTime, MdArrowBack, MdCalendarToday, MdDescription, MdRefresh} from "react-icons/md";
+import {MdAccessTime, MdCalendarToday, MdDescription, MdRefresh} from "react-icons/md";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BoardMeeting {
@@ -93,16 +93,10 @@ export default function PastMeetingsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <MdArrowBack className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Past Meetings

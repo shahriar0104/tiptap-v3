@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/contexts/ToastProvider";
-import { MdAttachFile, MdArrowBack } from "react-icons/md";
+import { MdAttachFile } from "react-icons/md";
+import { useBreadcrumbs } from "@/components/layout/breadcrumbsStore";
 
 interface GroupDto {
   id: string;
@@ -77,25 +78,15 @@ export default function AgendaGroupDocumentsPage() {
   }, [groupId, errorAlert]);
 
   const groupTitle = group?.title || "Agenda Group";
+  useBreadcrumbs([
+    { label: 'Upcoming Meetings', href: '/meeting/upcoming' },
+    { label: groupTitle },
+    { label: 'Documents' },
+  ]);
   const canUpload = meetingStatus === 'DRAFT' || meetingStatus === 'PUBLISHED';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-4">
-          {meetingId ? (
-            <button
-              type="button"
-              onClick={() => router.push(`/meeting/${meetingId}`)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <MdArrowBack /> Back to Meeting
-            </button>
-          ) : (
-            <span />
-          )}
-        </div>
-
+    <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">{groupTitle}</h1>
@@ -132,7 +123,6 @@ export default function AgendaGroupDocumentsPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
