@@ -1,5 +1,6 @@
 import app from './app';
 import { DatabaseConnection } from './config/database';
+import { ensureStorageBucket, BUCKET_NAME } from './utils/storage';
 
 const PORT = process.env.PORT || 4000;
 
@@ -8,6 +9,9 @@ async function startServer(): Promise<void> {
     // Test database connection using singleton
     await DatabaseConnection.connect();
     console.log('✅ Database connected successfully (singleton with connection pooling)');
+
+    // Ensure storage bucket exists (private)
+    await ensureStorageBucket(BUCKET_NAME, false);
 
     // Start the server
     const server = app.listen(PORT, () => {

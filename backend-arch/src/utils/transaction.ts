@@ -27,6 +27,10 @@ import {
 } from '../models/presentationModel';
 import { SlideModel, SlideModelImpl } from '../models/slideModel';
 import { UploadModel, UploadModelImpl } from '../models/uploadModel';
+import {
+  AgendaItemDocumentModel,
+  AgendaItemDocumentModelImpl,
+} from '../models/agendaItemDocumentModel';
 
 export interface Models {
   organizationModel: OrganizationModel;
@@ -38,6 +42,7 @@ export interface Models {
   presentationModel: PresentationModel;
   slideModel: SlideModel;
   uploadModel: UploadModel;
+  agendaItemDocumentModel: AgendaItemDocumentModel;
 }
 
 export type TxModels = Models;
@@ -53,6 +58,7 @@ function createModels(client: Prisma.TransactionClient | PrismaClient): Models {
     presentationModel: new PresentationModelImpl(client),
     slideModel: new SlideModelImpl(client),
     uploadModel: new UploadModelImpl(client),
+    agendaItemDocumentModel: new AgendaItemDocumentModelImpl(client),
   };
 }
 

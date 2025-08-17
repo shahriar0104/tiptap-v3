@@ -7,3 +7,5 @@ export { AgendaItemServiceImpl } from './agendaItemService';
 export type { AgendaItemService } from './agendaItemService';
 export { OrganizationServiceImpl } from './organizationService';
 export type { OrganizationService } from './organizationService';
+export { AgendaItemDocumentServiceImpl } from './agendaItemDocumentService';
+export type { AgendaItemDocumentService } from './agendaItemDocumentService';

@@ -42,6 +42,7 @@ export default function ProtectedRoute({
       'EDITOR': 3,
       'BOARD_MEMBER': 2,
       'MEMBER': 1,
+      'VIEWER': 0,
     };
 
     const userLevel = roleHierarchy[user.role] || 0;

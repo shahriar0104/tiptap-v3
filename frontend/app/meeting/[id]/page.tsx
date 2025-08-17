@@ -203,7 +203,12 @@ export default function AgendaPage() {
               Organize and manage your meeting agenda items with drag-and-drop functionality.
             </p>
           </div>
-          <AgendaBuilder paperId={boardMeeting.id} initialGroups={initialGroups} meetingDate={boardMeeting.meetingDate} />
+          <AgendaBuilder
+            paperId={boardMeeting.id}
+            initialGroups={initialGroups}
+            meetingDate={boardMeeting.meetingDate}
+            meetingStatus={boardMeeting.status}
+          />
         </div>
       </div>
     </div>

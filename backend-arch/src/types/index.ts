@@ -155,3 +155,10 @@ export interface UpdateSlideData {
   orderIndex?: number;
   agendaItemId?: string | null;
 }
+
+// AgendaItemDocument types
+export interface CreateAgendaItemDocumentData {
+  agendaItemId: string;
+  uploadId: string;
+  role?: 'CONTEXT' | 'FIGURE' | 'APPENDIX';
+}

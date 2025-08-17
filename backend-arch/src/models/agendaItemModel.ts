@@ -13,6 +13,13 @@ type AgendaItemWithRelations = Prisma.AgendaItemGetPayload<{
         id: true;
         title: true;
         boardMeetingId: true;
+        boardMeeting: {
+          select: {
+            id: true;
+            title: true;
+            organizationId: true;
+          };
+        };
       };
     };
   };

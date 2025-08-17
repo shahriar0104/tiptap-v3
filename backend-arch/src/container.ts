@@ -21,8 +21,9 @@ import {
   BoardMeetingServiceImpl,
   AgendaGroupServiceImpl,
   AgendaItemServiceImpl,
+  AgendaItemDocumentServiceImpl,
 } from './services';
-import type { BoardMeetingService, AgendaGroupService, AgendaItemService } from './services';
+import type { BoardMeetingService, AgendaGroupService, AgendaItemService, AgendaItemDocumentService } from './services';
 import { OrganizationService, OrganizationServiceImpl } from './services/organizationService';
 
 // Services with Impl pattern
@@ -41,7 +42,8 @@ import {
   AuthController, 
   BoardMeetingController, 
   AgendaGroupController, 
-  AgendaItemController 
+  AgendaItemController,
+  AgendaItemDocumentController 
 } from './controllers';
 import type { OrganizationController } from './controllers';
 
@@ -75,6 +77,7 @@ export class Container {
   public readonly presentationService: PresentationService;
   public readonly slideService: SlideService;
   public readonly uploadService: UploadService;
+  public readonly agendaItemDocumentService: AgendaItemDocumentService;
 
   // Controllers
   public readonly authController: AuthController;
@@ -86,6 +89,7 @@ export class Container {
   public readonly presentationController: PresentationController;
   public readonly slideController: SlideController;
   public readonly uploadController: UploadController;
+  public readonly agendaItemDocumentController: AgendaItemDocumentController;
 
   // Middlewares
   public readonly authMiddleware: AuthMiddleware;
@@ -112,6 +116,7 @@ export class Container {
     this.presentationService = new PresentationServiceImpl();
     this.slideService = new SlideServiceImpl();
     this.uploadService = new UploadServiceImpl();
+    this.agendaItemDocumentService = new AgendaItemDocumentServiceImpl();
 
     // Initialize Controllers with dependencies
     this.authController = new AuthController(this.authService);
@@ -125,6 +130,7 @@ export class Container {
     this.presentationController = new PresentationController(this.presentationService);
     this.slideController = new SlideController(this.slideService);
     this.uploadController = new UploadController(this.uploadService);
+    this.agendaItemDocumentController = new AgendaItemDocumentController(this.agendaItemDocumentService);
 
     // Initialize Middlewares with dependencies
     this.authMiddleware = new AuthMiddleware(this.userModel);

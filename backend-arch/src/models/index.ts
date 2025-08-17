@@ -8,3 +8,5 @@ export { AgendaItemModelImpl } from './agendaItemModel';
 export type { AgendaItemModel } from './agendaItemModel';
 export { OrganizationModelImpl } from './organizationModel';
 export type { OrganizationModel } from './organizationModel';
+export { AgendaItemDocumentModelImpl } from './agendaItemDocumentModel';
+export type { AgendaItemDocumentModel } from './agendaItemDocumentModel';

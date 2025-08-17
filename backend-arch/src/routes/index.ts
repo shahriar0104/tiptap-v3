@@ -5,6 +5,7 @@ import agendaRoutes from './agendaRoutes';
 import organizationRoutes from './organizationRoutes';
 import { createEditorContentRoutes } from './editorContentRoutes';
 import { createUploadRoutes } from './uploadRoutes';
+import { createAgendaItemDocumentRoutes } from './agendaItemDocumentRoutes';
 import { container } from '../container';
 
 const router = Router();
@@ -22,6 +23,10 @@ router.get('/health', (_req, res) => {
 router.use('/auth', authRoutes);
 router.use('/board-meetings', boardMeetingRoutes);
 router.use('/agenda', agendaRoutes);
+router.use(
+  '/agenda',
+  createAgendaItemDocumentRoutes(container.agendaItemDocumentController)
+);
 router.use('/organizations', organizationRoutes);
 router.use(
   '/editor-content',

@@ -1,7 +1,8 @@
 "use client";
 import {useRef, useState} from "react";
 import type { DragEvent } from "react";
-import {MdAdd, MdDelete, MdDragIndicator} from "react-icons/md";
+import Link from "next/link";
+import {MdAdd, MdDelete, MdDragIndicator, MdAttachFile} from "react-icons/md";
 import {api} from "@/lib/api";
 import { useToast } from "@/contexts/ToastProvider";
 
@@ -54,10 +55,12 @@ export default function AgendaBuilder({
   paperId,
   initialGroups,
   meetingDate,
+  meetingStatus,
 }: {
   paperId: string;
   initialGroups: AgendaGroup[];
   meetingDate?: string;
+  meetingStatus?: string;
 }) {
   const [groups, setGroups] = useState<AgendaGroup[]>(
     initialGroups.length > 0 
@@ -426,6 +429,16 @@ export default function AgendaBuilder({
                     <option value="COMPLETED">Completed</option>
                   </select>
                 </div>
+                {(meetingStatus === 'DRAFT' || meetingStatus === 'PUBLISHED') && !group.id.startsWith('local-') && (
+                  <Link
+                    href={`/agenda/groups/${group.id}/documents?meetingId=${paperId}`}
+                    title="Manage group documents"
+                    draggable={false}
+                    className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                  >
+                    <MdAttachFile size={18} />
+                  </Link>
+                )}
                 {groups.length > 1 && (
                   <button
                     onClick={() => removeGroup(group.id)}
@@ -446,7 +459,7 @@ export default function AgendaBuilder({
               {group.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30"
                   draggable={!saving}
                   onDragStart={() => onItemDragStart(group.id, item.id)}
                   onDragOver={(e) => e.preventDefault()}

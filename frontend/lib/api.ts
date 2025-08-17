@@ -45,6 +45,20 @@ export const api = {
     return response.json();
   },
 
+  // Multipart/form-data POST helper. Do not set Content-Type; let the browser set the boundary.
+  async postForm<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<ApiResponse<T>> {
+    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+      ...options,
+      headers: {
+        ...(options?.headers as Record<string, string>),
+      },
+    });
+    return response.json();
+  },
+
   async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiResponse<T>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

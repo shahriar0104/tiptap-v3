@@ -1,25 +1,28 @@
 import { Router, type RequestHandler } from 'express';
 import { UploadController } from '../controllers/uploadController';
-import { authenticate } from '../middlewares';
 import { validateRequest } from '../middlewares';
 import {
   createUploadSchema,
   updateUploadSchema,
   getUploadParamsSchema,
 } from '../validators/upload';
+import multer from 'multer';
+import { container } from '../container';
 
 export function createUploadRoutes(uploadController: UploadController): Router {
   const router = Router();
+  const upload = multer({ storage: multer.memoryStorage() });
 
   // Utility wrapper for async handlers/middlewares
   const wrap = (
     fn: (...args: Parameters<RequestHandler>) => Promise<unknown>
   ): RequestHandler => (req, res, next) => {
-    void fn(req, res, next);
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 
   // Apply authentication to all upload routes
-  router.use(wrap(authenticate));
+  router.use(container.authMiddleware.authenticate);
+  router.use(container.authMiddleware.requireOrganization);
 
   // POST /uploads - Create new upload
   /**
@@ -59,6 +62,41 @@ export function createUploadRoutes(uploadController: UploadController): Router {
     validateRequest({ body: createUploadSchema }),
     wrap(uploadController.createUpload)
   );
+
+  // POST /uploads/file - Multipart upload
+  /**
+   * @swagger
+   * /api/uploads/file:
+   *   post:
+   *     summary: Upload a file (multipart)
+   *     tags: [Uploads]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         multipart/form-data:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               file:
+   *                 type: string
+   *                 format: binary
+   *               boardMeetingId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Optional. Used to scope storage path.
+   *               agendaItemId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Optional. Used to scope storage path.
+   *     responses:
+   *       201:
+   *         description: Created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ApiResponse'
+   */
+  router.post('/file', upload.single('file'), wrap(uploadController.uploadFile));
 
   // GET /uploads - Get all uploads with pagination
   /**
@@ -139,6 +177,34 @@ export function createUploadRoutes(uploadController: UploadController): Router {
     '/:id',
     validateRequest({ params: getUploadParamsSchema }),
     wrap(uploadController.getUpload)
+  );
+
+  // GET /uploads/:id/signed-url - Generate a signed URL for secure download
+  /**
+   * @swagger
+   * /api/uploads/{id}/signed-url:
+   *   get:
+   *     summary: Generate a signed URL for the upload
+   *     tags: [Uploads]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: OK
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ApiResponse'
+   */
+  router.get(
+    '/:id/signed-url',
+    validateRequest({ params: getUploadParamsSchema }),
+    wrap(uploadController.getSignedUrl)
   );
 
   // PUT /uploads/:id - Update upload
